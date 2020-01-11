@@ -18,6 +18,8 @@ You will need both the libraries and development packages of the following:
 - libvncserver / libvncclient (if separate, you only need libvncclient)
 - libssh2 (NOT libssh)
 
+MacPorts is highly recommended for installing dependencies on macOS.
+
 The 'pkg-config' program must be installed for building
 
 - - -
