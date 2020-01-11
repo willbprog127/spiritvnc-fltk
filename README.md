@@ -14,7 +14,7 @@ To God be the glory! :-D :heart:
 __Dependencies__
 
 You will need both the libraries and development packages of the following:
-- fltk 1.3.4, 1.3.5
+- fltk 1.3.4, 1.3.5 or newer
 - libvncserver / libvncclient (if separate, you only need libvncclient)
 - libssh2 (NOT libssh)
 
