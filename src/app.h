@@ -156,8 +156,10 @@ public:
 
 		#ifndef __APPLE__
         // set up config file path and file
+        //   non-mac
         configPath = "/home/" + userName + "/.spiritvnc/";
         #else
+        //   mac
         configPath = "/Users/" + userName + "/.spiritvnc/";
         #endif
 
@@ -322,7 +324,7 @@ void svRestoreWindowSizePosition (void *);
 
 void svScanTimer (void *);
 
-void svSendKeyStrokesToHost (const char *, VncObject *);
+void svSendKeyStrokesToHost (std::string&, VncObject *);
 
 void svSetUnsetMainWindowTooltips ();
 

@@ -146,11 +146,8 @@ void VncObject::createVNCObject (HostItem * itm, bool listen)
 
                 svLogToFile("SpiritVNC ERROR - Could not open the public or private"
                     " SSH key file");
-                char strError[255] = {0};
-                snprintf(strError, 255, "Could not open the public or private SSH key"
-                    " file for %s %s",
-                    itm->name.c_str(), itm->hostAddress.c_str());
-                svMessageWindow(strError);
+                svMessageWindow(std::string("Could not open the public or private SSH key") +
+                    std::string(" file for ") + itm->name + itm->hostAddress);
 
                 if (vnc != NULL && vnc->vncClient != NULL)
                     VncObject::endAndDeleteViewer(vnc);
@@ -294,8 +291,8 @@ void VncObject::endViewer ()
                 Fl::check();
             }
 
-            svLogToFile(std::string(std::string("SpiritVNC - Unexpectedly disconnected from ")
-                + itm->name + " - " + itm->hostAddress).c_str());
+            svLogToFile(std::string("SpiritVNC - Unexpectedly disconnected from ")
+                + itm->name + std::string(" - ") + itm->hostAddress);
         }
 
         // we disconnected purposely from host
@@ -313,14 +310,14 @@ void VncObject::endViewer ()
 
             if (app->shuttingDown)
             {
-                svLogToFile(std::string(std::string("SpiritVNC - Automatically "
+                svLogToFile(std::string("SpiritVNC - Automatically "
                     "disconnecting because program is shutting down ")
-                    + itm->name + " - " + itm->hostAddress).c_str());
+                    + itm->name + std::string(" - ") + itm->hostAddress);
             }
             else
             {
-               svLogToFile(std::string(std::string("SpiritVNC - Manually disconnected from ")
-                    + itm->name + " - " + itm->hostAddress).c_str());
+               svLogToFile(std::string("SpiritVNC - Manually disconnected from ")
+                    + itm->name + std::string(" - ") + itm->hostAddress);
             }
         }
 
@@ -905,7 +902,6 @@ void VncViewer::draw ()
         Fl_Image * imgC = NULL;
         Fl_RGB_Image * imgZ = NULL;
 
-
         int isize = cl->width * cl->height * nBytesPerPixel;
 
         // if there's an alpha byte, set it to 255
@@ -990,7 +986,6 @@ int VncViewer::handle (int event)
         nMouseY = float(Fl::event_y() - app->scroller->y()) / fYAdj;
     }
 
-
     switch (event)
     {
         // ** mouse events **
@@ -1001,8 +996,7 @@ int VncViewer::handle (int event)
             if (Fl::event_button() == FL_RIGHT_MOUSE)
                 nButtonMask |= rfbButton3Mask;
 
-            SendPointerEvent(vnc->vncClient, nMouseX,
-                nMouseY, nButtonMask);
+            SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
 
             app->scanIsRunning = false;
             return 1;
@@ -1012,8 +1006,7 @@ int VncViewer::handle (int event)
             if (Fl::event_button() == FL_LEFT_MOUSE)
             {
                 nButtonMask |= rfbButton1Mask;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
@@ -1022,8 +1015,7 @@ int VncViewer::handle (int event)
             if (Fl::event_button() == FL_RIGHT_MOUSE)
             {
                 nButtonMask |= rfbButton3Mask;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
@@ -1035,8 +1027,7 @@ int VncViewer::handle (int event)
             {
                 // left mouse click
                 nButtonMask &= ~rfbButton1Mask;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
@@ -1046,8 +1037,7 @@ int VncViewer::handle (int event)
             if (Fl::event_button() == FL_RIGHT_MOUSE)
             {
                 nButtonMask &= ~rfbButton3Mask;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
@@ -1069,11 +1059,9 @@ int VncViewer::handle (int event)
                     nYDirection = rfbWheelUpMask;
 
                 nButtonMask |= nYDirection;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 nButtonMask &= ~nYDirection;
-                SendPointerEvent(vnc->vncClient, nMouseX,
-                    nMouseY, nButtonMask);
+                SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 return 1;
             }
@@ -1160,7 +1148,7 @@ void VncViewer::sendCorrectedKeyEvent (const char * strIn, const int nKey,
     // F12 macro
     if (nK == XK_F12 && downState == false)
     {
-        svSendKeyStrokesToHost(itm->f12Macro.c_str(), vnc);
+        svSendKeyStrokesToHost(itm->f12Macro, vnc);
         return;
     }
 

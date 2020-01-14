@@ -1741,7 +1741,9 @@ void svHandleMainWindowEvents (Fl_Widget * window, void * data)
     if (event == FL_LEAVE)
     {
         app->shuttingDown = true;
+
         VncObject::endAllViewers();
+
         svLogToFile("--- Program shutting down ---");
 
         // save main window position and size
@@ -2273,9 +2275,9 @@ void svScanTimer (void * data)
 
 
 /* send a stored text string to the vnc host */
-void svSendKeyStrokesToHost (const char * strIn, VncObject * vnc)
+void svSendKeyStrokesToHost (std::string& strIn, VncObject * vnc)
 {
-    if (vnc == NULL || strIn == NULL)
+    if (vnc == NULL)
         return;
 
     for (int i = 0;; i ++)
