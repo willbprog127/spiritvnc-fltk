@@ -997,6 +997,7 @@ int VncViewer::handle (int event)
                 nButtonMask |= rfbButton3Mask;
 
             SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
+            SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
 
             app->scanIsRunning = false;
             return 1;
@@ -1007,7 +1008,6 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton1Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1016,7 +1016,6 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton3Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1028,7 +1027,7 @@ int VncViewer::handle (int event)
                 // left mouse click
                 nButtonMask &= ~rfbButton1Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
+                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1038,7 +1037,7 @@ int VncViewer::handle (int event)
             {
                 nButtonMask &= ~rfbButton3Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
+                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1062,7 +1061,7 @@ int VncViewer::handle (int event)
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
                 nButtonMask &= ~nYDirection;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
+                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 return 1;
             }
             break;
