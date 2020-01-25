@@ -1323,7 +1323,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 && itm->name != "Listening")
             {
 				VncObject::hideMainViewer();
-                VncObject::createVNCObject(itm);
+                VncObject::createVNCObject(itm, false);
             }
 
             return;
@@ -1394,7 +1394,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 {
                     // connect
                     if (strcmp(strRes, "Connect") == 0)
-                        VncObject::createVNCObject(itm);
+                        VncObject::createVNCObject(itm, false);
 
                     // edit itm
                     if (strcmp(strRes, "Edit") == 0)
@@ -1878,7 +1878,7 @@ void svHandleThreadConnection (void * data)
         svLogToFile(std::string(std::string("SpiritVNC - Could not connect to ")
             + itm->name + " - " + itm->hostAddress).c_str());
 
-        if (vnc->listenMode)
+        if (vnc->listenMode == true)
         {
             app->hostList->remove(svItemNumFromItm(itm));
             svMessageWindow("Error: Unable to create a listening viewer at this time"
