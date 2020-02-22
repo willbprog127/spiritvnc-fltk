@@ -9,6 +9,8 @@ https://www.pismotek.com/brainout/
 
 To God be the glory! :-D :heart:
 
+SpiritVNC - FLTK has a 3-Clause BSD License.
+
 - - - -
 
 __Dependencies__
