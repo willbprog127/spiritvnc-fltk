@@ -54,7 +54,6 @@ public:
         waitTime(0),
         nLastClientWidth(0),
         nLastClientHeight(0),
-        listenMode(false),
         imgCursor(NULL),
         nCursorXHot(0),
         nCursorYHot(0),
@@ -84,7 +83,6 @@ public:
     int waitTime;
     int nLastClientWidth;
     int nLastClientHeight;
-    bool listenMode;
     Fl_RGB_Image * imgCursor;
     int nCursorXHot;
     int nCursorYHot;
@@ -107,7 +105,7 @@ public:
     static void checkVNCMessages (VncObject *);
     static void handleRemoteClipboardProc (rfbClient *, const char *, int);
     static void handleFrameBufferUpdate (rfbClient *); //, int, int, int, int);
-    static void createVNCObject (HostItem *, bool = false);
+    static void createVNCObject (HostItem *); //, bool = false);
     static void createVNCListener ();
     static void * initVNCConnection (void *);
     static void masterMessageLoop (void *);

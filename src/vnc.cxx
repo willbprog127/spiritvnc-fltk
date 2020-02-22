@@ -46,11 +46,18 @@ void VncObject::createVNCListener ()
     itm->name = "Listening";
     itm->scaling = 'f';
     itm->showRemoteCursor = true;
+    itm->isListener = true;
+
+    // set host list status icon
+    itm->icon = app->iconDisconnected;
+
     app->hostList->add("Listening", itm);
+    app->hostList->icon(app->hostList->size(), itm->icon);
     app->hostList->bottomline(app->hostList->size());
+
     app->hostList->redraw();
 
-    VncObject::createVNCObject(itm, true);
+    VncObject::createVNCObject(itm); //, true);
 }
 
 
@@ -58,7 +65,7 @@ void VncObject::createVNCListener ()
  * libvnc client / VncObject object
  * (static method)
  */
-void VncObject::createVNCObject (HostItem * itm, bool listen)
+void VncObject::createVNCObject (HostItem * itm) //, bool listen)
 {
     // if itm is null or our viewer is already created, return
     if (itm == NULL
@@ -119,14 +126,9 @@ void VncObject::createVNCObject (HostItem * itm, bool listen)
         svLogToFile(std::string(std::string("SpiritVNC - Attempting to connect to ")
             + itm->name + " - " + itm->hostAddress).c_str());
 
-        Fl::lock();
-        app->hostList->icon(svItemNumFromItm(itm), app->iconConnecting);
-        app->hostList->redraw();
-        Fl::unlock();
-        Fl::check();
-
-        // set listenMode, if enabled
-        vnc->listenMode = listen;
+        // set host list item status icon
+        itm->icon = app->iconConnecting;
+        Fl::awake(svHandleListItemIconChange);
 
         // ############  SSH CONNECTION ###############################################
         // we connect to this host with vnc through ssh
@@ -269,9 +271,7 @@ void VncObject::endAllViewers ()
 /* (instance method) */
 void VncObject::endViewer ()
 {
-    Fl::lock();
-    const int nItem = svItemNumFromVnc(this);  //GONK!
-    Fl::unlock();
+    //this->GONK!
 
     if (itm != NULL && itm->vnc != NULL)
     {
@@ -282,13 +282,10 @@ void VncObject::endViewer ()
         // host disconnected unexpectedly / interrupted connection
         if (itm->isConnected == true && itm->hasDisconnectRequest == false)
         {
-            if (listenMode == false)
+            if (itm->isListener == false)
             {
-                Fl::lock();
-                app->hostList->icon(nItem, app->iconDisconnectedError);
-                app->hostList->redraw();
-                Fl::unlock();
-                Fl::check();
+                itm->icon = app->iconDisconnectedError;
+                Fl::awake(svHandleListItemIconChange);
             }
 
             svLogToFile(std::string("SpiritVNC - Unexpectedly disconnected from ")
@@ -299,13 +296,11 @@ void VncObject::endViewer ()
         if ((itm->isConnected == true || itm->isConnecting == true)
             && itm->hasDisconnectRequest == true)
         {
-            if (listenMode == false)
+            if (itm->isListener == false)
             {
-                Fl::lock();
-                app->hostList->icon(nItem, app->iconDisconnected);
-                app->hostList->redraw();
-                Fl::unlock();
-                Fl::check();
+                // set host list item status icon
+                itm->icon = app->iconDisconnected;
+                Fl::awake(svHandleListItemIconChange);
             }
 
             if (app->shuttingDown)
@@ -348,10 +343,6 @@ void VncObject::endViewer ()
 
         // clean up the client
         rfbClientCleanup(vncClient);
-
-        // remove this host list entry if it's a listener
-        if (listenMode == true)
-            app->hostList->remove(nItem);
     }
 }
 
@@ -562,7 +553,7 @@ void * VncObject::initVNCConnection (void * data)
     // 'program name' parameter
     strParams[0] = strdup("SpiritVNCFLTK");
 
-    if (vnc->listenMode == false)
+    if (itm->isListener == false)
     {
         strncpy(strP, itm->vncAddressAndPort.c_str(), 1023);
         strParams[1] = strdup(strP);

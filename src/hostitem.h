@@ -35,6 +35,7 @@
 #ifndef HOSTITEM_H
 #define HOSTITEM_H
 
+#include <FL/Fl_Image.H>
 #include <iostream>
 #include "vnc.h"
 #include "consts_enums.h"
@@ -60,6 +61,7 @@ public:
         ignoreInactive(false),
         centerX(false),
         centerY(false),
+        isListener(false),
         isConnecting(false),
         isConnected(false),
         isWaitingForShow(false),
@@ -67,7 +69,8 @@ public:
         hasError(false),
         hasDisconnectRequest(false),
         hasAlreadyShown(false),
-        hasEnded(false)
+        hasEnded(false),
+        icon(NULL)
     {}
 
     std::string name;
@@ -100,6 +103,7 @@ public:
     bool centerX;
     bool centerY;
     //
+    bool isListener;
     bool isConnecting;
     bool isConnected;
     bool isWaitingForShow;
@@ -108,6 +112,7 @@ public:
     bool hasDisconnectRequest;
     bool hasAlreadyShown;
     bool hasEnded;
+    Fl_Image * icon;
 };
 
 #endif

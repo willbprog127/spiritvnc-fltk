@@ -154,15 +154,22 @@ public:
             exit(1);
         }
 
-		#ifndef __APPLE__
         // set up config file path and file
-        //   non-mac
+
+        // default is typical linux, freebsd path
         configPath = "/home/" + userName + "/.spiritvnc/";
-        #else
-        //   mac
+
+        // for current macOS / OS X
+		#ifdef __APPLE__
         configPath = "/Users/" + userName + "/.spiritvnc/";
         #endif
 
+        // for solaris or openindiana
+        #ifdef __sun__
+        configPath = "/export/home/" + userName + "/.spiritvnc/";
+        #endif
+
+        // build full path
         configPathAndFile = configPath + "spiritvnc-fltk.conf";
    }
 
@@ -287,6 +294,8 @@ void svHandleHostListEvents (Fl_Widget *, void *);
 void svHandleMainWindowEvents (Fl_Widget *, void *);
 
 void svPositionWidgets ();
+
+void svHandleListItemIconChange (void * notUsed);
 
 void svHandleThreadConnection (void *);
 

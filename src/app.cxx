@@ -625,7 +625,7 @@ void svConnectionWatcher (void * notUsed)
                 vnc->waitTime ++;
 
                 // 'soft' time-out reached
-                if (vnc->waitTime > app->nConnectionTimeout && vnc->listenMode == false)
+                if (vnc->waitTime > app->nConnectionTimeout && itm->isListener == false)
                 {
                     svDebugLog("svConnectionWatcher - 'Soft' timeout reached, giving up");
 
@@ -634,11 +634,10 @@ void svConnectionWatcher (void * notUsed)
                     app->nViewersWaiting --;
 
                     itm->isConnected = false;
-                    Fl::lock();
-                    app->hostList->icon(i, app->iconNoConnect);
-                    app->hostList->redraw();
-                    Fl::unlock();
-                    Fl::check();
+
+                    // set host list item status icon
+                    itm->icon = app->iconNoConnect;
+                    svHandleListItemIconChange(NULL);
 
                     svLogToFile(std::string(std::string("SpiritVNC - Could not "
                         "connect to ") + itm->name + " - "
@@ -746,7 +745,6 @@ void svCreateAppIcons (bool fromAppOptions)
 
     if (fromAppOptions == false)
     {
-        Fl::lock();
         // set initial icons on hostlist items
         for (int i = 0; i <= app->hostList->size(); i ++)
         {
@@ -754,8 +752,6 @@ void svCreateAppIcons (bool fromAppOptions)
                 app->hostList->icon(i, app->iconDisconnected);
         }
         app->hostList->redraw();
-        Fl::unlock();
-        Fl::check();
     }
 }
 
@@ -864,7 +860,7 @@ void svDeleteItem (int nItem)
     const HostItem * itm = static_cast<HostItem *>(app->hostList->data(nItem));
 
     // listening connection
-    if (strcmp(app->hostList->text(nItem), "Listening") == 0)
+    if (itm->isListener)
     {
         // end viewer, if connected
         if (itm != NULL)
@@ -1276,7 +1272,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
                 vnc = itm->vnc;
                 if (vnc != NULL)
                 {
-                    if (vnc->listenMode == true)
+                    if (itm->isListener == true)
                     {
                         svMessageWindow("Only one active listening viewer is allowed");
                         return;
@@ -1323,7 +1319,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 && itm->name != "Listening")
             {
 				VncObject::hideMainViewer();
-                VncObject::createVNCObject(itm, false);
+                VncObject::createVNCObject(itm); //, false);
             }
 
             return;
@@ -1394,7 +1390,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 {
                     // connect
                     if (strcmp(strRes, "Connect") == 0)
-                        VncObject::createVNCObject(itm, false);
+                        VncObject::createVNCObject(itm); //, false);
 
                     // edit itm
                     if (strcmp(strRes, "Edit") == 0)
@@ -1410,7 +1406,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
         }
 
         // show options window for reverse / listening connections
-        if (itm->name == "Listening" && menuUp == false)
+        if (itm->isListener == true && menuUp == false)
         {
             // prevent re-entry (FLTK menu bug)
             menuUp = true;
@@ -1468,6 +1464,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                         if (strcmp(strRes, "Disconnect") == 0)
                         {
                             VncObject::endAndDeleteViewer(vnc);
+                            svDeleteItem(svItemNumFromItm(itm));
 
                             menuUp = false;
                             return;
@@ -1809,6 +1806,30 @@ void svPositionWidgets ()
 }
 
 
+/* handle host item icon change */
+void svHandleListItemIconChange (void * notUsed)
+{
+    int i;
+    int listCount = app->hostList->size();
+    HostItem * itm = NULL;
+
+    // iterate through host list and set status icons for items
+    for (i = 0; i < listCount; i++)
+    {
+        itm = static_cast<HostItem *>(app->hostList->data(i));
+        if (itm != NULL && itm->icon != NULL)
+        {
+            Fl::lock();
+            app->hostList->icon(i, itm->icon);
+            Fl::unlock();
+            Fl::check();
+        }
+    }
+
+    app->hostList->redraw();
+}
+
+
 /* handle messages from child threads */
 void svHandleThreadConnection (void * data)
 {
@@ -1834,9 +1855,10 @@ void svHandleThreadConnection (void * data)
         itm->isWaitingForShow = false;
 
         app->nViewersWaiting --;
-        app->hostList->icon(nItem, app->iconConnected);
-        app->hostList->redraw();
-        Fl::check();
+
+        // set host list item status icon
+        itm->icon = app->iconConnected;
+        svHandleListItemIconChange(NULL);
 
         svLogToFile(std::string(std::string("SpiritVNC - Connected to ")
             + itm->name + " - " + itm->hostAddress).c_str());
@@ -1844,14 +1866,14 @@ void svHandleThreadConnection (void * data)
         // show viewer if it matches the selected host list item
         nSelectedHost = app->hostList->value();
 
-        if (nItem == nSelectedHost && vnc->listenMode == false)
+        if (nItem == nSelectedHost && itm->isListener == false)
         {
             svDebugLog("svConnectionWatcher - Showing viewer because it's selected");
             vnc->showViewer();
         }
 
         // create another listening viewer
-        if (vnc->listenMode == true)
+        if (itm->isListener == true)
         {
             svDebugLog("svConnectionWatcher - Creating Listener object");
 
@@ -1871,16 +1893,17 @@ void svHandleThreadConnection (void * data)
 
         itm->isConnected = false;
         app->nViewersWaiting --;
-        app->hostList->icon(nItem, app->iconNoConnect);
-        app->hostList->redraw();
-        Fl::check();
+
+        // set host list item status icon
+        itm->icon = app->iconNoConnect;
+        svHandleListItemIconChange(NULL);
 
         svLogToFile(std::string(std::string("SpiritVNC - Could not connect to ")
             + itm->name + " - " + itm->hostAddress).c_str());
 
-        if (vnc->listenMode == true)
+        if (itm->isListener == true)
         {
-            app->hostList->remove(svItemNumFromItm(itm));
+            app->hostList->remove(svItemNumFromItm(itm));  // was removed in vnc->endViewer()
             svMessageWindow("Error: Unable to create a listening viewer at this time"
                 "\n\nTry exiting the program, then restarting");
         }
@@ -1895,7 +1918,7 @@ void svHandleThreadConnection (void * data)
 
         vnc->waitTime ++;
 
-        if (vnc->waitTime > app->nConnectionTimeout && vnc->listenMode == false)
+        if (vnc->waitTime > app->nConnectionTimeout && itm->isListener == false)
         {
             svDebugLog("svConnectionWatcher - 'Soft' timeout reached, giving up");
 
@@ -1903,9 +1926,9 @@ void svHandleThreadConnection (void * data)
 
             app->nViewersWaiting --;
 
-            app->hostList->icon(nItem, app->iconNoConnect);
-            app->hostList->redraw();
-            Fl::check();
+            // set host list item status icon
+            itm->icon = app->iconNoConnect;
+            svHandleListItemIconChange(NULL);
 
             // stop this thread because our 'soft' timeout was reached
             svDebugLog("svConnectionWatcher - Canceling itm->threadRFB");
@@ -2776,8 +2799,6 @@ void svShowF8Window ()
 /* create / show item options window */
 void svShowItemOptions (HostItem * im)
 {
-    bool fromListen = false;
-
     // check to make sure no other child window is visible
     if (app->childWindowVisible == true)
         return;
@@ -2802,10 +2823,6 @@ void svShowItemOptions (HostItem * im)
         itm->qualityLevel = 5;
         itm->vnc = NULL;
     }
-    else
-        // this is a listening itm
-        if (itm->name == "Listening")
-            fromListen = true;
 
     // window size
     int nWinWidth = 545;
@@ -3153,7 +3170,7 @@ void svShowItemOptions (HostItem * im)
     itmOptWin->end();
 
     // disable irrelevant things for listening connections
-    if (fromListen)
+    if (itm->isListener)
     {
         inName->deactivate();
         inGroup->deactivate();
