@@ -710,7 +710,8 @@ char * VncObject::handlePassword (rfbClient * cl)
 
     VncObject * vnc = static_cast<VncObject *>(rfbClientGetClientData(cl, app->libVncVncPointer));
 
-    if (vnc == NULL) {
+    if (vnc == NULL)
+    {
         svLogToFile("SpiritVNC ERROR - handlePassword: vnc is null");
         return NULL;
     }

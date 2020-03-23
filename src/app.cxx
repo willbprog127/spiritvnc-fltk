@@ -862,10 +862,6 @@ void svDeleteItem (int nItem)
     // listening connection
     if (itm->isListener)
     {
-        // end viewer, if connected
-        if (itm != NULL)
-            VncObject::endAndDeleteViewer(itm->vnc);
-
         okayToDelete = true;
     }
     else
@@ -1463,8 +1459,9 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                         // disconnect
                         if (strcmp(strRes, "Disconnect") == 0)
                         {
+                            int iIndx = svItemNumFromItm(itm);
                             VncObject::endAndDeleteViewer(vnc);
-                            svDeleteItem(svItemNumFromItm(itm));
+                            svDeleteItem(iIndx);
 
                             menuUp = false;
                             return;
