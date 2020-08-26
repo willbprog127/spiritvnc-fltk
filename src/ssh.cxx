@@ -145,10 +145,6 @@ void * svCreateSSHConnection (void * data)
     strUserAuthList = libssh2_userauth_list(sshSession, itm->sshUser.c_str(),
         itm->sshUser.size());
 
-    svLogToFile(std::string(std::string("svCreateSSHConnection - Host offers the"
-        " following authentication methods: ") +
-        std::string(strUserAuthList)).c_str());
-
     // add 'password' authentication to our bitmap
     if (strstr(strUserAuthList, "password"))
         nSSHAuthType |= LIBSSH2_AUTH_PASSWORD;
@@ -178,7 +174,7 @@ void * svCreateSSHConnection (void * data)
             authError = true;
         }
         authError = false;
-        svLogToFile("svCreateSSHConnection - Authentication by public key succeeded");
+        //svLogToFile("svCreateSSHConnection - Authentication by public key succeeded");
     }
 
     // no authorization methods were successful
@@ -327,7 +323,7 @@ void * svCreateSSHConnection (void * data)
                     if (nLoopErrors > nLoopErrorLimit)
                     {
                         sshError = true;
-                        std::cout << "sshError: channel write error\n";
+                        svDebugLog("svCreateSSHConnection - sshError: channel write error");
                         break;
                     }
                 }
@@ -384,12 +380,12 @@ void * svCreateSSHConnection (void * data)
     }
 
     if (sshError == false)
-        svLogToFile("SpiritVNC - SSH connection disconnected normally from "
-            + itm->name + " - " + itm->hostAddress);
+        svLogToFile("SSH connection disconnected normally from '"
+            + itm->name + "' - " + itm->hostAddress);
     else
     {
-        svLogToFile("SpiritVNC - SSH connection disconnected abnormally from "
-            + itm->name + " - " + itm->hostAddress);
+        svLogToFile("SSH connection disconnected abnormally from '"
+            + itm->name + "' - " + itm->hostAddress);
         itm->hasError = true;
     }
 

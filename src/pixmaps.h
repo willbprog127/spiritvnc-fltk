@@ -51,6 +51,8 @@ extern const char * pmStatusDisconnected[];
 extern const char * pmStatusDisconnectedCB[];
 extern const char * pmStatusDisconnectedError[];
 extern const char * pmStatusDisconnectedErrorCB[];
+extern const char * pmStatusDisconnectedBigError[];
+extern const char * pmStatusDisconnectedBigErrorCB[];
 extern const char * pmStatusNoConnect[];
 extern const char * pmStatusNoConnectCB[];
 extern const char * pmListHelp[];

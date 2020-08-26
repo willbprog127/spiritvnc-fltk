@@ -113,6 +113,7 @@ public:
     bool hasAlreadyShown;
     bool hasEnded;
     Fl_Image * icon;
+    std::string lastErrorMessage;
 };
 
 #endif

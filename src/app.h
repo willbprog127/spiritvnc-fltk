@@ -179,6 +179,7 @@ public:
     VncViewer * vncViewer;
     Fl_Image * iconDisconnected;
     Fl_Image * iconDisconnectedError;
+    Fl_Image * iconDisconnectedBigError;
     Fl_Image * iconConnected;
     Fl_Image * iconNoConnect;
     Fl_Image * iconConnecting;
@@ -324,8 +325,6 @@ void svLogToFile (const std::string&);
 void svMessageWindow (const std::string&, const std::string& = "SpiritVNC");
 
 bool svThereAreConnectedItems ();
-
-void svParseLogMessages (const std::string&, const std::string&);
 
 void svResizeScroller ();
 

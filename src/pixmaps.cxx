@@ -324,6 +324,30 @@ const char * pmStatusDisconnectedError[] = {
     "                "
 };
 
+const char * pmStatusDisconnectedBigError[] = {
+"16 16 4 1",
+" 	c None",
+".	c #D4D4D4",
+"+	c #C07271",
+"@	c #FFFFFF",
+"                ",
+"                ",
+"                ",
+"   ..........   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .++++++++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   ..........   ",
+"                ",
+"                ",
+"                "
+};
+
 const char * pmStatusNoConnect[] = {
     "16 16 2 1",
     "   c None",
@@ -439,6 +463,30 @@ const char * pmStatusDisconnectedErrorCB[] = {
     "                ",
     "                ",
     "                "
+};
+
+const char * pmStatusDisconnectedBigErrorCB[] = {
+"16 16 4 1",
+" 	c None",
+".	c #D4D4D4",
+"+	c #000000",
+"@	c #FFFFFF",
+"                ",
+"                ",
+"                ",
+"   ..........   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   .++++++++.   ",
+"   .+++@@+++.   ",
+"   .+++@@+++.   ",
+"   ..........   ",
+"                ",
+"                ",
+"                "
 };
 
 const char * pmStatusNoConnectCB[] = {

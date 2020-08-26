@@ -54,9 +54,9 @@ int SVInput::handle (int e)
         // create context menu
         const Fl_Menu_Item miMain[] = {
             {"Undo", 0, 0, 0, FL_MENU_DIVIDER},
-            {"Cut", 0},
-            {"Copy", 0},
-            {"Paste", 0},
+            {"Cut"},
+            {"Copy"},
+            {"Paste"},
             {0}
         };
 
@@ -115,7 +115,7 @@ int SVSecretInput::handle (int e)
             {"Undo", 0, 0, 0, FL_MENU_DIVIDER},
             {"Cut", 0, 0, 0, FL_MENU_INACTIVE},
             {"Copy", 0, 0, 0, FL_MENU_INACTIVE},
-            {"Paste", 0},
+            {"Paste"},
             {0}
         };
 
@@ -169,7 +169,7 @@ void svConfigCreateNew ()
     {
         if (mkdir(app->configPath.c_str(), 0700) == -1)
         {
-            svLogToFile("SpiritVNC ERROR - Cannot create config file directory");
+            std::cout << "SpiritVNC ERROR - Cannot create config file directory" << std::endl;
             exit(-1);
         }
     }
@@ -491,7 +491,7 @@ void svConfigWrite ()
     // oops, can't open config file
     if (ofs.fail())
     {
-        svLogToFile("SpiritVNC ERROR - Could not open config file for writing");
+        std::cout << "SpiritVNC ERROR - Could not open config file for writing" << std::endl;
         return;
     }
 
@@ -639,9 +639,8 @@ void svConnectionWatcher (void * notUsed)
                     itm->icon = app->iconNoConnect;
                     svHandleListItemIconChange(NULL);
 
-                    svLogToFile(std::string(std::string("SpiritVNC - Could not "
-                        "connect to ") + itm->name + " - "
-                        + itm->hostAddress).c_str());
+                    svLogToFile(std::string(std::string("Could not connect to '") +
+                      itm->name + "' - " + itm->hostAddress).c_str());
                 }
             }
 
@@ -719,6 +718,7 @@ void svCreateAppIcons (bool fromAppOptions)
         // use colorblind icons
         app->iconDisconnected = new Fl_Pixmap(pmStatusDisconnectedCB);
         app->iconDisconnectedError = new Fl_Pixmap(pmStatusDisconnectedErrorCB);
+        app->iconDisconnectedBigError = new Fl_Pixmap(pmStatusDisconnectedBigErrorCB);
         app->iconConnected = new Fl_Pixmap(pmStatusConnectedCB);
         app->iconNoConnect = new Fl_Pixmap(pmStatusNoConnectCB);
         app->iconConnecting = new Fl_Pixmap(pmStatusConnectingCB);
@@ -728,6 +728,7 @@ void svCreateAppIcons (bool fromAppOptions)
         // use default icons
         app->iconDisconnected = new Fl_Pixmap(pmStatusDisconnected);
         app->iconDisconnectedError = new Fl_Pixmap(pmStatusDisconnectedError);
+        app->iconDisconnectedBigError = new Fl_Pixmap(pmStatusDisconnectedBigError);
         app->iconConnected = new Fl_Pixmap(pmStatusConnected);
         app->iconNoConnect = new Fl_Pixmap(pmStatusNoConnect);
         app->iconConnecting = new Fl_Pixmap(pmStatusConnecting);
@@ -867,12 +868,12 @@ void svDeleteItem (int nItem)
     else
     {
         // standard (non-listening) connection
-        char strConfirm[512] = "Are you sure you want to delete '";
-        strncat(strConfirm, itm->name.c_str(), strlen(strConfirm) - strlen(itm->name.c_str()));
-        strncat(strConfirm, "'?", 3);
+        std::string strConfirm = "Are you sure you want to delete '" + itm->name + "'?";
+
         fl_message_hotspot(0);
         fl_message_title("SpiritVNC - Delete Item");
-        if (fl_choice("%s", "Cancel", "No", "Yes", strConfirm) == 2)
+
+        if (fl_choice("%s", "Cancel", "No", "Yes", strConfirm.c_str()) == 2)
             okayToDelete = true;
     }
 
@@ -910,7 +911,7 @@ int svFindFreeTcpPort ()
 
     if (nSock < 0)
     {
-        svLogToFile("SpiritVNC ERROR - Cannot create socket for svFindFreeTCPPort");
+        svLogToFile("ERROR - Cannot create socket for svFindFreeTCPPort");
         return 0;
     }
 
@@ -1314,8 +1315,8 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 && itm->isConnecting == false
                 && itm->name != "Listening")
             {
-				VncObject::hideMainViewer();
-                VncObject::createVNCObject(itm); //, false);
+              VncObject::hideMainViewer();
+              VncObject::createVNCObject(itm);
             }
 
             return;
@@ -1331,7 +1332,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
 
             // show single-clicked viewer (if connected)
             if (itm->isConnected)
-                vnc->showViewer();
+                vnc->setObjectVisible();
 
             return;
         }
@@ -1364,11 +1365,21 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             && itm->name != "Listening"
             && menuUp == false)
         {
+
+            // include any error message in menu
+            int nFlags = FL_MENU_INVISIBLE;
+            char strError[FL_PATH_MAX] = {0};
+            strncat(strError, itm->lastErrorMessage.c_str(), FL_PATH_MAX - 1);
+
+            if (itm->lastErrorMessage != "")
+              nFlags = FL_MENU_INACTIVE | FL_MENU_DIVIDER;
+
             // create context menu
             const Fl_Menu_Item miMain[] = {
-                {"Connect", 0},
-                {"Edit", 0},
-                {"Delete...", 0},
+                {strError, 0, 0, 0, nFlags},
+                {"Connect"},
+                {"Edit"},
+                {"Delete..."},
                 {0}
             };
 
@@ -1386,7 +1397,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 {
                     // connect
                     if (strcmp(strRes, "Connect") == 0)
-                        VncObject::createVNCObject(itm); //, false);
+                        VncObject::createVNCObject(itm);
 
                     // edit itm
                     if (strcmp(strRes, "Edit") == 0)
@@ -1413,7 +1424,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             {
                 // create context menu
                 const Fl_Menu_Item miM[] = {
-                    {"Delete", 0},
+                    {"Delete"},
                     {0}
                 };
 
@@ -1440,8 +1451,8 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
 
                 // create context menu
                 const Fl_Menu_Item miMain[] = {
-                    {"Disconnect", 0},
-                    {"Edit", 0},
+                    {"Disconnect"},
+                    {"Edit"},
                     {0}
                 };
 
@@ -1711,12 +1722,12 @@ void svHandleLocalClipboard (int source, void * notused)
     // don't process clipboard if there's no remote server being displayed
     // of it's the selection buffer
     if (app->vncViewer->vnc == NULL || source != 1)
-		return;
+      return;
 
     // if we received a cliboard event from the active server,
     // we don't want an event loop
     if (app->blockLocalClipboardHandling == true)
-		return;
+      return;
 
 	app->blockLocalClipboardHandling = true;
 
@@ -1792,7 +1803,7 @@ void svPositionWidgets ()
         if (vnc != NULL)
         {
             svResizeScroller();
-            vnc->showViewer();
+            vnc->setObjectVisible();
         }
 
         Fl::redraw();
@@ -1857,8 +1868,8 @@ void svHandleThreadConnection (void * data)
         itm->icon = app->iconConnected;
         svHandleListItemIconChange(NULL);
 
-        svLogToFile(std::string(std::string("SpiritVNC - Connected to ")
-            + itm->name + " - " + itm->hostAddress).c_str());
+        svLogToFile("Connected to '" + itm->name + "' - " +
+          itm->hostAddress);
 
         // show viewer if it matches the selected host list item
         nSelectedHost = app->hostList->value();
@@ -1866,7 +1877,7 @@ void svHandleThreadConnection (void * data)
         if (nItem == nSelectedHost && itm->isListener == false)
         {
             svDebugLog("svConnectionWatcher - Showing viewer because it's selected");
-            vnc->showViewer();
+            vnc->setObjectVisible();
         }
 
         // create another listening viewer
@@ -1892,15 +1903,15 @@ void svHandleThreadConnection (void * data)
         app->nViewersWaiting --;
 
         // set host list item status icon
-        itm->icon = app->iconNoConnect;
+        if (itm->lastErrorMessage != "")
+          itm->icon = app->iconDisconnectedBigError;
+        else
+          itm->icon = app->iconNoConnect;
         svHandleListItemIconChange(NULL);
-
-        svLogToFile(std::string(std::string("SpiritVNC - Could not connect to ")
-            + itm->name + " - " + itm->hostAddress).c_str());
 
         if (itm->isListener == true)
         {
-            app->hostList->remove(svItemNumFromItm(itm));  // was removed in vnc->endViewer()
+            app->hostList->remove(svItemNumFromItm(itm));
             svMessageWindow("Error: Unable to create a listening viewer at this time"
                 "\n\nTry exiting the program, then restarting");
         }
@@ -1933,9 +1944,7 @@ void svHandleThreadConnection (void * data)
             if (itm->threadRFB != 0)
                 pthread_cancel(itm->threadRFB);
 
-            svLogToFile(std::string(std::string("SpiritVNC - Could not "
-                "connect to ") + itm->name + " - "
-                + itm->hostAddress).c_str());
+            svLogToFile("Could not connect to '" + itm->name + "' - " + itm->hostAddress);
         }
     }
 }
@@ -2011,8 +2020,8 @@ int svItemNumFromItm (HostItem * im)
             }
         }
     }
-
     Fl::unlock();
+
     return 0;
 }
 
@@ -2126,13 +2135,14 @@ void svItmOptionsRadioButtonsCallback (Fl_Widget * button, void * data)
 }
 
 
-/* send text to log file (do not include \n in text!) */
+/* send text to log file */
 void svLogToFile (const std::string& strMessage)
 {
     std::ofstream ofs;
     char logFileName[FL_PATH_MAX] = {0};
     char timeBuf[50] = {0};
     time_t logClock = 0;
+    std::string strLineEnd;
 
     if (strMessage.size() == 0 || strMessage == "")
         return;
@@ -2153,8 +2163,13 @@ void svLogToFile (const std::string& strMessage)
         return;
     }
 
+    // add newline, if necessary
+    if (strMessage.find('\n') == std::string::npos)
+      strLineEnd = "\n";
+
     // write time-stamp to log
-    ofs << timeBuf << "- " << strMessage << std::endl;
+    ofs << timeBuf << "- " << strMessage << strLineEnd;
+
     ofs.close();
 }
 
@@ -2187,18 +2202,6 @@ bool svThereAreConnectedItems ()
     }
 
     return false;
-}
-
-
-/* look at logged text for any keywords we want to act on */
-void svParseLogMessages (const std::string& strTimeStamp, const std::string& strMessage)
-{
-    // failed authentication
-    if (strMessage.find("Authentication failed") != std::string::npos)
-    {
-        svMessageWindow("Connection failed\n\nIncorrect or missing password");
-        svLogToFile("SpiritVNC ERROR - Connection failed.  Incorrect or missing password");
-    }
 }
 
 
@@ -2276,7 +2279,7 @@ void svScanTimer (void * data)
             svDeselectAllItems();
             VncObject::hideMainViewer();
             app->hostList->select(app->nCurrentScanItem);
-            itm->vnc->showViewer();
+            itm->vnc->setObjectVisible();
 
             // 'tickle' host screen so it doesn't go to screensaver by
             // moving remote mouse back and forth a certain amount
@@ -2285,6 +2288,7 @@ void svScanTimer (void * data)
             SendPointerEvent(itm->vnc->vncClient, 100, 100, 0);
             Fl::check();
             SendPointerEvent(itm->vnc->vncClient, 0, 0, 0);
+            Fl::check();
             break;
         }
     }
@@ -2320,49 +2324,49 @@ void svSetUnsetMainWindowTooltips ()
     if (app->showTooltips == true)
         app->btnListAdd->tooltip("Add a new connection");
     else
-        app->btnListAdd->tooltip("");
+        app->btnListAdd->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListDelete->tooltip("Delete current connection");
     else
-        app->btnListDelete->tooltip("");
+        app->btnListDelete->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListUp->tooltip("Move current connection item up in list");
     else
-        app->btnListUp->tooltip("");
+        app->btnListUp->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListDown->tooltip("Move current connection item down in list");
     else
-        app->btnListDown->tooltip("");
+        app->btnListDown->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListScan->tooltip("Scan through connected items in list");
     else
-        app->btnListScan->tooltip("");
+        app->btnListScan->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListListen->tooltip("Listen for incoming VNC connections");
     else
-        app->btnListListen->tooltip("");
+        app->btnListListen->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListHelp->tooltip("View About and Help information");
     else
-        app->btnListHelp->tooltip("");
+        app->btnListHelp->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->btnListOptions->tooltip("View / edit app options");
     else
-        app->btnListOptions->tooltip("");
+        app->btnListOptions->tooltip(NULL);
 
     if (app->showTooltips == true)
         app->hostList->tooltip("Double-click a disconnected item to connect to it\n\n"
             "Right-click a connected item to disconnect from it\n\n"
             "Right-click a disconnected item to connect, edit or delete it");
     else
-        app->hostList->tooltip("");
+        app->hostList->tooltip(NULL);
 }
 
 
@@ -2463,8 +2467,8 @@ void svShowAppOptions ()
     app->childWindowVisible = true;
 
     // window size
-    int nWinWidth = 650;  //575;
-    int nWinHeight = 500;  //400;
+    int nWinWidth = 650;
+    int nWinHeight = 500;
 
     // set window position
     int nX = (app->mainWin->w() / 2) - (nWinWidth / 2);
@@ -2507,8 +2511,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         spinScanTimeout->tooltip("When scanning, this is how long SpiritVNC waits before moving"
             " to the next connected host item");
-    else
-        spinScanTimeout->tooltip("");
 
     // starting local ssh port number
     Fl_Spinner * spinLocalSSHPort = new Fl_Spinner(nXPos, nYPos += nYStep,
@@ -2523,8 +2525,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         spinLocalSSHPort->tooltip("This is the first SSH port used locally for VNC-over-SSH"
             " connections");
-    else
-        spinLocalSSHPort->tooltip("");
 
     // inactive connection timeout
     Fl_Spinner * spinDeadTimeout = new Fl_Spinner(nXPos, nYPos += nYStep,
@@ -2539,8 +2539,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         spinDeadTimeout->tooltip("This is the time, in seconds, SpiritVNC waits before"
             " disconnecting a remote host due to inactivity");
-    else
-        spinDeadTimeout->tooltip("");
 
 
     Fl_Box * lblSep01 = new Fl_Box(nXPos, nYPos += nYStep + 14,
@@ -2561,8 +2559,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         inAppFontSize->tooltip("This is the font size used throughout SpiritVNC.  Restart the app to"
             " see any changes");
-    else
-        inAppFontSize->tooltip("");
 
     // list font
     SVInput * inListFont = new SVInput(nXPos, nYPos += nYStep, 210, 28,
@@ -2574,8 +2570,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         inListFont->tooltip("This is the font used for the host list.  Restart the app to"
             " see any changes");
-    else
-        inListFont->tooltip("");
 
     // list font size
     SVInput * inListFontSize = new SVInput(nXPos + 260, nYPos, 42, 28,
@@ -2589,8 +2583,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         inListFontSize->tooltip("This is the font size used for the host list.  Restart the app to"
             " see any changes");
-    else
-        inListFontSize->tooltip("");
 
     // use color-blind icons?
     Fl_Check_Button * chkCBIcons = new Fl_Check_Button(nXPos, nYPos += nYStep,
@@ -2602,8 +2594,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         chkCBIcons->tooltip("Check this to enable color-blind-friendly icons in the host list."
             " Restart the app to see any changes");
-    else
-        chkCBIcons->tooltip("");
 
     // show tooltips?
     Fl_Check_Button * chkShowTooltips = new Fl_Check_Button(nXPos, nYPos += nYStep,
@@ -2615,8 +2605,6 @@ void svShowAppOptions ()
         chkShowTooltips->set();
         chkShowTooltips->tooltip("Check this to enable tooltips in SpiritVNC.");
     }
-    else
-        chkShowTooltips->tooltip("");
 
     // show reverse connection notification?
     Fl_Check_Button * chkShowReverseConnect = new Fl_Check_Button(nXPos, nYPos += nYStep,
@@ -2628,8 +2616,6 @@ void svShowAppOptions ()
     if (app->showTooltips == true)
         chkShowReverseConnect->tooltip("Check this to show a message window when a reverse"
         " connection happens.");
-    else
-        chkShowReverseConnect->tooltip("");
 
     nYPos += nYStep;
 
@@ -2651,8 +2637,6 @@ void svShowAppOptions ()
     btnCancel->callback(svHandleAppOptionsButtons);
     if (app->showTooltips == true)
         btnCancel->tooltip("Click to abandon any edits and close this window");
-    else
-        btnCancel->tooltip("");
 
     // 'Save' button
     Fl_Button * btnSave = new Fl_Button((nWinWidth - 100 - 10),
@@ -2664,8 +2648,6 @@ void svShowAppOptions ()
     btnSave->callback(svHandleAppOptionsButtons);
     if (app->showTooltips == true)
         btnSave->tooltip("Click to save edits and close this window");
-    else
-        btnSave->tooltip("");
 
     // end adding stuff to the options window
     winAppOpts->end();
@@ -2857,8 +2839,6 @@ void svShowItemOptions (HostItem * im)
     inName->user_data(SV_ITM_NAME);
     if (app->showTooltips == true)
         inName->tooltip("The connection name as displayed in the host connection list");
-    else
-        inName->tooltip("");
 
     // connection group
     SVInput * inGroup = new SVInput(nXPos, nYPos += nYStep, 210, 28, "Connection group ");
@@ -2866,8 +2846,6 @@ void svShowItemOptions (HostItem * im)
     inGroup->user_data(SV_ITM_GRP);
     if (app->showTooltips == true)
         inGroup->tooltip("The group name this connection belongs to");
-    else
-        inGroup->tooltip("");
 
     // remote address
     SVInput * inAddress = new SVInput(nXPos, nYPos += nYStep, 210, 28, "Remote address ");
@@ -2876,8 +2854,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         inAddress->tooltip("The IP address of the remote host you want to connect to."
         "  Do NOT include the VNC port number here");
-    else
-        inAddress->tooltip("");
 
     // f12 macro text
     SVInput * inF12Macro = new SVInput(nXPos, nYPos += nYStep, 210, 28, "F12 macro ");
@@ -2886,8 +2862,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         inF12Macro->tooltip("Key presses that are sent to the remote host when"
             " you press the F12 key");
-    else
-        inF12Macro->tooltip("");
 
     // * vnc type buttons *
 
@@ -2898,8 +2872,6 @@ void svShowItemOptions (HostItem * im)
     rbVNC->callback(svItmOptionsRadioButtonsCallback);
     if (app->showTooltips == true)
         rbVNC->tooltip("Choose this for VNC connections that don't tunnel through SSH");
-    else
-        rbVNC->tooltip("");
 
     // vnc with ssh
     Fl_Radio_Round_Button * rbSVNC = new Fl_Radio_Round_Button(nXPos, nYPos += nYStep,
@@ -2908,8 +2880,6 @@ void svShowItemOptions (HostItem * im)
     rbSVNC->callback(svItmOptionsRadioButtonsCallback);
     if (app->showTooltips == true)
         rbSVNC->tooltip("Choose this for VNC connections that use SSH to tunnel to the host");
-    else
-        rbSVNC->tooltip("");
 
     // set pre-existing value
     if (itm->hostType == 'v')
@@ -2923,8 +2893,6 @@ void svShowItemOptions (HostItem * im)
     inVNCPort->user_data(SV_ITM_VNC_PORT);
     if (app->showTooltips == true)
         inVNCPort->tooltip("The VNC port/display number of the host.  Defaults to 5900");
-    else
-        inVNCPort->tooltip("");
 
     // vnc password (shows dots, not cleartext password)
     SVSecretInput * inVNCPassword = new SVSecretInput(nXPos, nYPos += nYStep,
@@ -2933,8 +2901,6 @@ void svShowItemOptions (HostItem * im)
     inVNCPassword->user_data(SV_ITM_VNC_PASS);
     if (app->showTooltips == true)
         inVNCPassword->tooltip("The VNC password for the host");
-    else
-        inVNCPassword->tooltip("");
 
     // vnc compression level
     SVInput * inVNCCompressLevel = new SVInput(nXPos, nYPos += nYStep,
@@ -2945,8 +2911,6 @@ void svShowItemOptions (HostItem * im)
     inVNCCompressLevel->user_data(SV_ITM_VNC_COMP);
     if (app->showTooltips == true)
         inVNCCompressLevel->tooltip("The level of compression, from 0 to 9");
-    else
-        inVNCCompressLevel->tooltip("");
 
     // vnc quality level
     SVInput * inVNCQualityLevel = new SVInput(nXPos, nYPos += nYStep,
@@ -2957,8 +2921,6 @@ void svShowItemOptions (HostItem * im)
     inVNCQualityLevel->user_data(SV_ITM_VNC_QUAL);
     if (app->showTooltips == true)
         inVNCQualityLevel->tooltip("The level of image quality, from 0 to 9");
-    else
-        inVNCQualityLevel->tooltip("");
 
     // ignore inactive connection checking
     Fl_Check_Button * chkIgnoreInactive = new Fl_Check_Button(nXPos, nYPos += nYStep,
@@ -2969,8 +2931,6 @@ void svShowItemOptions (HostItem * im)
             " server inactivity");
     if (itm->ignoreInactive == true)
         chkIgnoreInactive->set();
-    else
-        chkIgnoreInactive->tooltip("");
 
     // * scaling options group *
     Fl_Group * grpScaling = new Fl_Group(nXPos, nYPos += nYStep, 300, 300);
@@ -2984,8 +2944,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         rbScaleOff->tooltip("Choose this if you don't want any scaling."
             "  Scrollbars will appear for hosts with screens larger than the viewer");
-    else
-        rbScaleOff->tooltip("");
 
     // scale up and down
     Fl_Radio_Round_Button * rbScaleZoom = new Fl_Radio_Round_Button(nXPos, nYPos += nYStep,
@@ -2995,8 +2953,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         rbScaleZoom->tooltip("Choose this if you want small host screens scaled up to fit the"
         " viewer, or large host screens scaled down to fit the viewer");
-    else
-        rbScaleZoom->tooltip("");
 
     // scale down only
     Fl_Radio_Round_Button * rbScaleFit = new Fl_Radio_Round_Button(nXPos, nYPos += nYStep,
@@ -3006,8 +2962,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         rbScaleFit->tooltip("Choose this to scale down large host screens to fit the viewer but"
         " small host screens are not scaled up");
-    else
-        rbScaleFit->tooltip("");
 
     // set pre-existing value
     if (itm->scaling == 's')
@@ -3025,8 +2979,6 @@ void svShowItemOptions (HostItem * im)
         chkScalingFast->set();
     if (app->showTooltips == true)
         chkScalingFast->tooltip("Check to select fast scaling instead of quality scaling");
-    else
-        chkScalingFast->tooltip("");
 
     // end of scaling group
     grpScaling->end();
@@ -3037,8 +2989,6 @@ void svShowItemOptions (HostItem * im)
     chkShowRemoteCursor->user_data(SV_ITM_SHW_REM_CURSOR);
     if (app->showTooltips == true)
         chkShowRemoteCursor->tooltip("Check to show remote locally");
-    else
-        chkShowRemoteCursor->tooltip("");
 
     // set pre-existing value
     if (itm->showRemoteCursor == true)
@@ -3061,8 +3011,6 @@ void svShowItemOptions (HostItem * im)
     inSSHName->user_data(SV_ITM_SSH_NAME);
     if (app->showTooltips == true)
         inSSHName->tooltip("The SSH user name for the host");
-    else
-        inSSHName->tooltip("");
 
     // password used for ssh login (if used)
     SVSecretInput * inSSHPassword = new SVSecretInput(nXPos, nYPos += nYStep,
@@ -3072,8 +3020,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         inSSHPassword->tooltip("The SSH password for the host (usually not necessary when using"
         " key files)");
-    else
-        inSSHPassword->tooltip("");
 
     // ssh port (on the remote host)
     SVInput * inSSHPort = new SVInput(nXPos, nYPos += nYStep, 100, 28, "SSH remote port ");
@@ -3081,8 +3027,6 @@ void svShowItemOptions (HostItem * im)
     inSSHPort->user_data(SV_ITM_SSH_PORT);
     if (app->showTooltips == true)
         inSSHPort->tooltip("The remote host's port number");
-    else
-        inSSHPort->tooltip("");
 
     // ssh public key full path (if used)
     SVInput * inSSHPubKey = new SVInput(nXPos, nYPos += nYStep,
@@ -3092,16 +3036,12 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         inSSHPubKey->tooltip("The SSH public key file location (usually not necessary"
             " when using a SSH password");
-    else
-        inSSHPubKey->tooltip("");
 
     // button to select ssh public key
     Fl_Button * btnShowPubKeyChooser = new Fl_Button(nXPos + 300 + 2, nYPos + 4, 20, 20, "...");
     btnShowPubKeyChooser->callback(svItmOptionsChoosePubKeyBtnCallback, inSSHPubKey);
     if (app->showTooltips == true)
         btnShowPubKeyChooser->tooltip("Click to choose a SSH public key file");
-    else
-        btnShowPubKeyChooser->tooltip("");
 
     // ssh private key full path (if used)
     SVInput * inSSHPrvKey = new SVInput(nXPos, nYPos += nYStep,
@@ -3111,16 +3051,12 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         inSSHPrvKey->tooltip("The SSH private key file location (usually not"
             " necessary when using a SSH password");
-    else
-        inSSHPrvKey->tooltip("");
 
     // button to select ssh private key
     Fl_Button * btnShowPrvKeyChooser = new Fl_Button(nXPos + 300 + 2, nYPos + 4, 20, 20, "...");
     btnShowPrvKeyChooser->callback(svItmOptionsChoosePrvKeyBtnCallback, inSSHPrvKey);
     if (app->showTooltips == true)
         btnShowPrvKeyChooser->tooltip("Click to choose a SSH private key file");
-    else
-        btnShowPrvKeyChooser->tooltip("");
 
     // set app vars
     app->childWindowBeingDisplayed = itmOptWin;
@@ -3135,8 +3071,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         btnDel->tooltip("Click to permanently delete this host connection"
             " (not undoable).  You will be asked to confirm before item is deleted");
-    else
-        btnDel->tooltip("");
 
     // 'Cancel' button
     Fl_Button * btnCancel = new Fl_Button((nWinWidth - 210 - 10),
@@ -3148,8 +3082,6 @@ void svShowItemOptions (HostItem * im)
     if (app->showTooltips == true)
         btnCancel->tooltip("Click to abandon any edits to this connection"
             " and close this window");
-    else
-        btnCancel->tooltip("");
 
     // 'Save' button
     Fl_Button * btnSave = new Fl_Button((nWinWidth - 100 - 10),
@@ -3160,8 +3092,6 @@ void svShowItemOptions (HostItem * im)
     btnSave->callback(svHandleItmOptionsButtons);
     if (app->showTooltips == true)
         btnSave->tooltip("Click to save edits made to this connection and close this window");
-    else
-        btnSave->tooltip("");
 
     // end adding stuff to the options window
     itmOptWin->end();

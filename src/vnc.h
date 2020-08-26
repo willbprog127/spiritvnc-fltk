@@ -73,7 +73,8 @@ public:
         vncClient->GotXCutText = VncObject::handleRemoteClipboardProc;
         vncClient->FinishedFrameBufferUpdate = VncObject::handleFrameBufferUpdate;
 
-        rfbClientLog = rfbClientErr = VncObject::libVncLogging;
+        rfbClientLog = VncObject::libVncLogging;
+        rfbClientErr = VncObject::libVncLogging;
     }
 
     // public variables
@@ -92,7 +93,7 @@ public:
 
     // public methods
     //  instance
-    void showViewer ();
+    void setObjectVisible ();
     bool fitsScroller ();
     void endViewer ();
     //  static
@@ -102,10 +103,11 @@ public:
     static char * handlePassword (rfbClient *);
     static void handleCursorShapeChange (rfbClient *, int, int, int, int, int);
     static void libVncLogging (const char *, ...);
+    static void parseErrorMessages(HostItem *, const char *);
     static void checkVNCMessages (VncObject *);
     static void handleRemoteClipboardProc (rfbClient *, const char *, int);
-    static void handleFrameBufferUpdate (rfbClient *); //, int, int, int, int);
-    static void createVNCObject (HostItem *); //, bool = false);
+    static void handleFrameBufferUpdate (rfbClient *);
+    static void createVNCObject (HostItem *);
     static void createVNCListener ();
     static void * initVNCConnection (void *);
     static void masterMessageLoop (void *);

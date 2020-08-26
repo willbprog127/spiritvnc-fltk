@@ -48,7 +48,7 @@
 #include "consts_enums.h"
 
 
-AppVars* app = new AppVars();
+AppVars * app = new AppVars();
 
 
 /* main program */
@@ -113,7 +113,6 @@ int main (int argc, char **argv)
     Fl::wait();
 
     // restore main window saved postition and size
-    //  *don't* do delayed repositioning on Mac OS X / macOS
     #ifndef __APPLE__
     // x11 window managers usually need delayed repositioning
     Fl::add_timeout(0.5, svRestoreWindowSizePosition);

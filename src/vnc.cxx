@@ -83,7 +83,7 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
 
         if (itm->vnc == NULL)
         {
-            svMessageWindow("Error! Could not create new VncObject!", "SpiritVNC - FLTK");
+            svMessageWindow("Error: Cannot create new VncObject", "SpiritVNC - FLTK");
             return;
         }
 
@@ -96,6 +96,7 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
         itm->hasDisconnectRequest = false;
         itm->hasAlreadyShown = false;
         itm->hasEnded = false;
+        itm->lastErrorMessage = "";
 
         // store this viewer pointer in libvnc client data
         rfbClientSetClientData(vnc->vncClient, app->libVncVncPointer, vnc);
@@ -123,8 +124,8 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
         // add to viewers waiting ref count
         app->nViewersWaiting ++;
 
-        svLogToFile(std::string(std::string("SpiritVNC - Attempting to connect to ")
-            + itm->name + " - " + itm->hostAddress).c_str());
+        svLogToFile("Attempting to connect to '" + itm->name + "' - " +
+          itm->hostAddress);
 
         // set host list item status icon
         itm->icon = app->iconConnecting;
@@ -146,10 +147,10 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
                 itm->hasCouldntConnect = true;
                 itm->hasError = true;
 
-                svLogToFile("SpiritVNC ERROR - Could not open the public or private"
+                svLogToFile("ERROR - Could not open the public or private"
                     " SSH key file");
-                svMessageWindow(std::string("Could not open the public or private SSH key") +
-                    std::string(" file for ") + itm->name + itm->hostAddress);
+                svMessageWindow("Could not open the public or private SSH key "
+                  "file for '" + itm->name + "' - " + itm->hostAddress);
 
                 if (vnc != NULL && vnc->vncClient != NULL)
                     VncObject::endAndDeleteViewer(vnc);
@@ -173,8 +174,8 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
 
             if (sshResult != 0)
             {
-                std::cout << "SpiritVNC - FLTK: Couldn't create SSH thread  Error: "
-                    << sshResult << std::endl;
+                svLogToFile("ERROR - Couldn't create SSH thread for '" + itm->name +
+                  "' - " + itm->hostAddress);
                 itm->isConnecting = false;
                 itm->hasCouldntConnect = true;
                 itm->hasError = true;
@@ -217,7 +218,8 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
 
         if (rfbResult != 0)
         {
-            std::cout << "SpiritVNC - FLTK: Couldn't create RFB thread  Error: " << rfbResult;
+            svLogToFile("ERROR - Couldn't create RFB thread for '" + itm->name +
+                  "' - " + itm->hostAddress);
             itm->isConnecting = false;
             itm->hasCouldntConnect = true;
             itm->hasError = true;
@@ -288,8 +290,8 @@ void VncObject::endViewer ()
                 Fl::awake(svHandleListItemIconChange);
             }
 
-            svLogToFile(std::string("SpiritVNC - Unexpectedly disconnected from ")
-                + itm->name + std::string(" - ") + itm->hostAddress);
+            svLogToFile("Unexpectedly disconnected from '" + itm->name +
+              "' - " + itm->hostAddress);
         }
 
         // we disconnected purposely from host
@@ -305,14 +307,13 @@ void VncObject::endViewer ()
 
             if (app->shuttingDown)
             {
-                svLogToFile(std::string("SpiritVNC - Automatically "
-                    "disconnecting because program is shutting down ")
-                    + itm->name + std::string(" - ") + itm->hostAddress);
+                svLogToFile("Automatically disconnecting.  Program is shutting down '" +
+                    itm->name + "' - " + itm->hostAddress);
             }
             else
             {
-               svLogToFile(std::string("SpiritVNC - Manually disconnected from ")
-                    + itm->name + std::string(" - ") + itm->hostAddress);
+               svLogToFile("Manually disconnected from '" + itm->name + "' - " +
+                itm->hostAddress);
             }
         }
 
@@ -486,7 +487,7 @@ void VncObject::handleRemoteClipboardProc (rfbClient * cl, const char * text, in
 }
 
 
-/* set main VncViewer object to hide itself */
+/* set VncViewer object to hide itself */
 /* (static method) */
 void VncObject::hideMainViewer ()
 {
@@ -582,7 +583,9 @@ void * VncObject::initVNCConnection (void * data)
     // this function blocks, that's why this function runs as a thread
     if (rfbInitClient(vnc->vncClient, &nNumOfParams, strParams) == false)
     {
-        perror("SpiritVNC - rfbInitClient");
+        char strError[FL_PATH_MAX] = {0};
+        VncObject::parseErrorMessages(itm, strerror_r(errno, strError, FL_PATH_MAX));
+
         itm->isConnected = false;
         itm->isConnecting = false;
         itm->hasCouldntConnect = true;
@@ -605,49 +608,52 @@ void * VncObject::initVNCConnection (void * data)
 }
 
 
+/* check connection errors and inform user, if necessary */
+void VncObject::parseErrorMessages (HostItem * itm, const char * strMessageIn)
+{
+    char strMsg[FL_PATH_MAX] = {0};
+
+    if (itm == NULL || strMessageIn == NULL)
+      return;
+
+    // formate for log file
+    snprintf(strMsg, FL_PATH_MAX, "[Error] '%s' - %s: %s", itm->name.c_str(),
+      itm->hostAddress.c_str(), strMessageIn);
+
+    // write to log file
+    svLogToFile(strMsg);
+
+    // search and 'fix up' any special cases
+
+    // load into string
+    std::string strMessage = strMessageIn;
+
+    // 'fix up' for possible bad / missing password
+    if (strMessage.find("Resource temporarily unavailable") != std::string::npos)
+      itm->lastErrorMessage = "Bad / missing password or Resource temporarily unavailable";
+    else
+      itm->lastErrorMessage = strMessage;
+
+}
+
+
 /* libvnc logging callback */
 /* (static function) */
 void VncObject::libVncLogging (const char * format, ...)
 {
+  if (app->debugMode == true)
+  {
     va_list args;
-    char timeBuf[50] = {0};
     char msgBuf[FL_PATH_MAX] = {0};
-    time_t logClock;
-
-    // build time-stamp
-    time(&logClock);
-    strftime(timeBuf, 50, "%Y-%m-%d %X ", localtime(&logClock));
 
     // combine format string and args into nowBuff
     va_start(args, format);
     vsnprintf(msgBuf, FL_PATH_MAX, format, args);
     va_end(args);
 
-    // analyze messages in case user needs to be alerted
-    svParseLogMessages(timeBuf, msgBuf);
-
-    // only write libvncserver msgs if in verbose mode
-    if (app->verboseLogging == true)
-    {
-        std::ofstream ofs;
-        char logFileName[FL_PATH_MAX] = {0};
-
-        snprintf(logFileName, FL_PATH_MAX, "%s/spiritvnc-fltk.log", app->configPath.c_str());
-
-        ofs.open(logFileName, std::ofstream::out | std::ofstream::app);
-
-        // oops, can't open log file
-        if (ofs.fail())
-        {
-            std::cout << "SpiritVNC ERROR - Could not open log file for writing" <<
-                std::endl << std::flush;
-            return;
-        }
-
-        // write time-stamp to log
-        ofs << timeBuf << "- " << msgBuf << std::endl;
-        ofs.close();
-   }
+    // log to file
+    svLogToFile(msgBuf);
+  }
 }
 
 
@@ -704,7 +710,7 @@ char * VncObject::handlePassword (rfbClient * cl)
 {
     if (cl == NULL)
     {
-        svLogToFile("SpiritVNC ERROR - handlePassword: vnc->vncClient is null");
+        svLogToFile("ERROR - handlePassword: vnc->vncClient is null");
         return NULL;
     }
 
@@ -712,29 +718,27 @@ char * VncObject::handlePassword (rfbClient * cl)
 
     if (vnc == NULL)
     {
-        svLogToFile("SpiritVNC ERROR - handlePassword: vnc is null");
+        svLogToFile("ERROR - handlePassword: vnc is null");
         return NULL;
     }
 
     HostItem * itm = svItmFromVnc(vnc);
 
     if (itm == NULL)
+    {
+        svLogToFile("ERROR - handlePassword: itm is null");
         return NULL;
+    }
 
-    const char * strPass = itm->vncPassword.c_str();
-
-    if (strPass == NULL)
-        return NULL;
-    else
-        return strdup(strPass);
+    return strdup(itm->vncPassword.c_str());
 }
 
 
 /* set vnc object to show itself */
 /* (instance method) */
-void VncObject::showViewer ()
+void VncObject::setObjectVisible ()
 {
-    const HostItem * itm = static_cast<HostItem *>(this->itm);
+    //const HostItem * itml = static_cast<HostItem *>(itm);
 
     if (itm == NULL || vncClient == NULL)
         return;
@@ -846,7 +850,7 @@ void VncObject::checkVNCMessages (VncObject * vnc)
 
 /*
  * ########################################################################################
- * ########################## VNC VIEWER ##################################################
+ * ########################## VNC VIEWER WIDGET ###########################################
  * ########################################################################################
  */
 /* draw event for vnc view widget */
