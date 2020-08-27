@@ -583,8 +583,7 @@ void * VncObject::initVNCConnection (void * data)
     // this function blocks, that's why this function runs as a thread
     if (rfbInitClient(vnc->vncClient, &nNumOfParams, strParams) == false)
     {
-        char strError[FL_PATH_MAX] = {0};
-        VncObject::parseErrorMessages(itm, strerror_r(errno, strError, FL_PATH_MAX));
+        VncObject::parseErrorMessages(itm, strerror(errno));
 
         itm->isConnected = false;
         itm->isConnecting = false;
