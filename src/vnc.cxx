@@ -84,7 +84,6 @@ void VncObject::createVNCObject (HostItem * itm)
 
         if (itm->vnc == NULL)
         {
-            //svMessageWindow("Error: Cannot create new VncObject", "SpiritVNC - FLTK");
             fl_beep(FL_BEEP_DEFAULT);
             return;
         }

@@ -144,7 +144,7 @@ const char * pmListListen[] = {
 };
 
 const char * pmListOptions[] = {
-    "16 16 2 1",
+    "15 16 2 1",
     " 	c None",
     ".	c #404040",
     "               ",

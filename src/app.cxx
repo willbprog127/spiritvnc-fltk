@@ -266,9 +266,9 @@ void svConfigReadCreateHostList ()
                 // app font size
                 if (strProp == "appfontsize")
                 {
-                	app->nAppFontSize = atoi(strVal.c_str());
-                	if (app->nAppFontSize < 1)
-                		app->nAppFontSize = 10;
+                    app->nAppFontSize = atoi(strVal.c_str());
+                    if (app->nAppFontSize < 1)
+                        app->nAppFontSize = 10;
                 }
 
                 // list font
@@ -281,9 +281,9 @@ void svConfigReadCreateHostList ()
                 // list font size
                 if (strProp == "listfontsize")
                 {
-                	app->nListFontSize = atoi(strVal.c_str());
-                	if (app->nListFontSize < 1)
-                		app->nListFontSize = 10;
+                    app->nListFontSize = atoi(strVal.c_str());
+                    if (app->nListFontSize < 1)
+                        app->nListFontSize = 10;
                 }
 
                 // saved x position
@@ -322,7 +322,9 @@ void svConfigReadCreateHostList ()
                 if (strProp == "showreverseconnect")
                     app->showReverseConnect = svConvertStringToBoolean(strVal);
 
+                // #############################################################################
                 // ######## per-connection options #############################################
+                // #############################################################################
 
                 // new host entry
                 if (strProp == "host")
@@ -389,6 +391,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "vncpass")
                 {
                     itm->vncPassword = base64Decode(strVal);
+
                     if (itm->vncPassword == "")
                         itm->vncPassword = "(empty)";
                 }
@@ -429,6 +432,7 @@ void svConfigReadCreateHostList ()
                     itm->compressLevel = atoi(strVal.c_str());
                     if (itm->compressLevel < 0)
                         itm->compressLevel = 0;
+
                     if (itm->compressLevel > 9)
                         itm->compressLevel = 9;
                 }
@@ -437,8 +441,10 @@ void svConfigReadCreateHostList ()
                 if (strProp == "quality")
                 {
                     itm->qualityLevel = atoi(strVal.c_str());
+
                     if (itm->qualityLevel < 0)
                         itm->qualityLevel = 0;
+
                     if (itm->qualityLevel > 9)
                         itm->qualityLevel = 9;
                 }
@@ -460,7 +466,7 @@ void svConfigReadCreateHostList ()
         {
             // add last host entry to host list
             if (itm != NULL)
-                app->hostList->add(itm->name.c_str(), static_cast<void *>(itm));
+                app->hostList->add(itm->name.c_str(), itm);
 
             // add a separator
             if (addSep == true)
@@ -714,17 +720,7 @@ bool svConvertStringToBoolean (const std::string& strIn)
 void svCreateAppIcons (bool fromAppOptions)
 {
     // default or colorblind icons
-    if (app->colorBlindIcons == true)
-    {
-        // use colorblind icons
-        app->iconDisconnected = new Fl_Pixmap(pmStatusDisconnectedCB);
-        app->iconDisconnectedError = new Fl_Pixmap(pmStatusDisconnectedErrorCB);
-        app->iconDisconnectedBigError = new Fl_Pixmap(pmStatusDisconnectedBigErrorCB);
-        app->iconConnected = new Fl_Pixmap(pmStatusConnectedCB);
-        app->iconNoConnect = new Fl_Pixmap(pmStatusNoConnectCB);
-        app->iconConnecting = new Fl_Pixmap(pmStatusConnectingCB);
-    }
-    else
+    if (app->colorBlindIcons == false)
     {
         // use default icons
         app->iconDisconnected = new Fl_Pixmap(pmStatusDisconnected);
@@ -733,6 +729,16 @@ void svCreateAppIcons (bool fromAppOptions)
         app->iconConnected = new Fl_Pixmap(pmStatusConnected);
         app->iconNoConnect = new Fl_Pixmap(pmStatusNoConnect);
         app->iconConnecting = new Fl_Pixmap(pmStatusConnecting);
+    }
+    else
+    {
+        // use colorblind icons
+        app->iconDisconnected = new Fl_Pixmap(pmStatusDisconnectedCB);
+        app->iconDisconnectedError = new Fl_Pixmap(pmStatusDisconnectedErrorCB);
+        app->iconDisconnectedBigError = new Fl_Pixmap(pmStatusDisconnectedBigErrorCB);
+        app->iconConnected = new Fl_Pixmap(pmStatusConnectedCB);
+        app->iconNoConnect = new Fl_Pixmap(pmStatusNoConnectCB);
+        app->iconConnecting = new Fl_Pixmap(pmStatusConnectingCB);
     }
 
     // list button icons
@@ -749,10 +755,9 @@ void svCreateAppIcons (bool fromAppOptions)
     {
         // set initial icons on hostlist items
         for (int i = 0; i <= app->hostList->size(); i ++)
-        {
             if (app->hostList->data(i) != NULL)
                 app->hostList->icon(i, app->iconDisconnected);
-        }
+
         app->hostList->redraw();
     }
 }
@@ -869,9 +874,7 @@ void svDeleteItem (int nItem)
 
     // listening connection
     if (itm->isListener)
-    {
         okayToDelete = true;
-    }
     else
     {
         // standard (non-listening) connection
@@ -934,6 +937,7 @@ int svFindFreeTcpPort ()
     }
 
     close(nSock);
+
     return 0;
 }
 
@@ -1000,7 +1004,7 @@ void svHandleAppOptionsButtons (Fl_Widget * widget, void * data)
     // get the widget's name through user_data()
     const char * strName = static_cast<char *>(widget->user_data());
 
-    if (strName == NULL || strName[0] == '\0')
+    if (strName == NULL)
         return;
 
     // cancel button clicked
@@ -1047,13 +1051,13 @@ void svHandleAppOptionsButtons (Fl_Widget * widget, void * data)
                     app->nDeadTimeout = static_cast<Fl_Spinner *>(wid)->value();
 
                 if (strName == "inAppFontSize")
-                	app->nAppFontSize = atoi(static_cast<SVInput *>(wid)->value());
+                    app->nAppFontSize = atoi(static_cast<SVInput *>(wid)->value());
 
                 if (strName == "inListFont")
-                	app->strListFont = static_cast<SVInput *>(wid)->value();
+                    app->strListFont = static_cast<SVInput *>(wid)->value();
 
                 if (strName == "inListFontSize")
-                	app->nListFontSize = atoi(static_cast<SVInput *>(wid)->value());
+                    app->nListFontSize = atoi(static_cast<SVInput *>(wid)->value());
 
                 if (strName == "chkCBIcons")
                 {
@@ -1119,7 +1123,7 @@ void svHandleF8Buttons (Fl_Widget * widget, void * data)
     // get the widget's name through user_data()
     const char * strName = static_cast<char *>(widget->user_data());
 
-    if (strName == NULL || strName[0] == '\0')
+    if (strName == NULL)
         return;
 
     VncObject * vnc = app->vncViewer->vnc;
@@ -1281,6 +1285,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
             if (itm != NULL)
             {
                 vnc = itm->vnc;
+
                 if (vnc != NULL)
                 {
                     if (itm->isListener == true)
@@ -1379,14 +1384,13 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             return;
         }
 
-        // show options window if disconnected and not a listening connection
+        // show pop-up menu if disconnected and not a listening connection
         if (itm->isConnected == false
             && itm->isConnecting == false
             && itm->hasDisconnectRequest == false
             && itm->isListener == false
             && menuUp == false)
         {
-
             // include any error message in menu
             int nFlags = FL_MENU_INVISIBLE;
             char strError[FL_PATH_MAX] = {0};
@@ -1448,7 +1452,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             menuUp = false;
         }
 
-        // show options window for reverse / listening connections
+        // show pop-up menu for reverse / listening connections
         if (itm->isListener == true && menuUp == false)
         {
             // prevent re-entry (FLTK menu bug)
@@ -1471,10 +1475,9 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                 {
                     const char * strRes = miRes->text;
 
-                    if (strRes != NULL)
-                        // delete item (and itm)
-                        if (strcmp(strRes, "Delete") == 0)
-                            svDeleteItem(nHostItemNum);
+                    // delete item (and itm)
+                    if (strRes != NULL && strcmp(strRes, "Delete") == 0)
+                        svDeleteItem(nHostItemNum);
                 }
 
                 menuUp = false;
@@ -1514,10 +1517,12 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                         if (strcmp(strRes, "Disconnect") == 0)
                         {
                             int iIndx = svItemNumFromItm(itm);
+
                             VncObject::endAndDeleteViewer(vnc);
                             svDeleteItem(iIndx);
 
                             menuUp = false;
+
                             return;
                         }
 
@@ -1561,7 +1566,7 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
     // get the widget's name through user_data()
     const char * strName = static_cast<char *>(widget->user_data());
 
-    if (strName == NULL || strName[0] == '\0')
+    if (strName == NULL)
         return;
 
     // cancel button clicked
@@ -1655,6 +1660,7 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
                     itm->compressLevel = atoi(static_cast<SVInput *>(wid)->value());
                     if (itm->compressLevel < 0)
                         itm->compressLevel = 0;
+
                     if (itm->compressLevel > 9)
                         itm->compressLevel = 9;
                 }
@@ -1664,6 +1670,7 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
                     itm->qualityLevel = atoi(static_cast<SVInput *>(wid)->value());
                     if (itm->qualityLevel < 0)
                         itm->qualityLevel = 0;
+
                     if (itm->qualityLevel > 9)
                         itm->qualityLevel = 9;
                 }
@@ -1790,11 +1797,11 @@ void svHandleLocalClipboard (int source, void * notused)
     if (app->blockLocalClipboardHandling == true)
       return;
 
-	app->blockLocalClipboardHandling = true;
+    app->blockLocalClipboardHandling = true;
 
-	Fl::paste(*app->vncViewer, 1);
+    Fl::paste(*app->vncViewer, 1);
 
-	app->blockLocalClipboardHandling = false;
+    app->blockLocalClipboardHandling = false;
 }
 
 
@@ -2068,6 +2075,7 @@ int svItemNumFromItm (HostItem * im)
     HostItem * itm = NULL;
 
     Fl::lock();
+
     for (int i = 0; i <= app->hostList->size(); i ++)
     {
         itm = static_cast<HostItem *>(app->hostList->data(i));
@@ -2081,6 +2089,7 @@ int svItemNumFromItm (HostItem * im)
             }
         }
     }
+
     Fl::unlock();
 
     return 0;
@@ -2094,6 +2103,7 @@ int svItemNumFromVnc (VncObject * v)
     VncObject * vnc = NULL;
 
     Fl::lock();
+
     for (int i = 0; i <= app->hostList->size(); i ++)
     {
         itm = static_cast<HostItem *>(app->hostList->data(i));
@@ -2108,6 +2118,7 @@ int svItemNumFromVnc (VncObject * v)
             }
         }
     }
+
     Fl::unlock();
 
     return 0;
@@ -2120,6 +2131,7 @@ HostItem * svItmFromVnc (VncObject * v)
     HostItem * itm = NULL;
 
     Fl::lock();
+
     for (int i = 0; i <= app->hostList->size(); i ++)
     {
         itm = static_cast<HostItem *>(app->hostList->data(i));
@@ -2133,6 +2145,7 @@ HostItem * svItmFromVnc (VncObject * v)
             }
         }
     }
+
     Fl::unlock();
 
     return NULL;
@@ -2288,8 +2301,8 @@ void svResizeScroller ()
 /* restore previous session's window position */
 void svRestoreWindowSizePosition (void * notUsed)
 {
-	app->mainWin->resize(app->savedX, app->savedY, app->savedW, app->savedH);
-	app->mainWin->redraw();
+    app->mainWin->resize(app->savedX, app->savedY, app->savedW, app->savedH);
+    app->mainWin->redraw();
 }
 
 
@@ -2466,7 +2479,7 @@ void svShowAboutHelp ()
         " href='https://www.pismotek.com/brainout/'>"
         "https://www.pismotek.com/brainout/</a></font></center></p>"
         "<p><center><font face='sans'>Version " SV_APP_VERSION "<br>"
-        "Built &nbsp;" __DATE__ "&nbsp;&bull;&nbsp;" __TIME__ "</font></center></p>"
+        "Built " __DATE__ "&nbsp;&bull;&nbsp;" __TIME__ "</font></center></p>"
         "<p><center><font face='sans'>SpiritVNC is a multi-viewer VNC client for *nix systems"
         " based on FLTK.  SpiritVNC features VNC-through-SSH, reverse VNC (listening)"
         " connections and automatic timed scanning of each connected viewer."
@@ -2477,14 +2490,14 @@ void svShowAboutHelp ()
         "<li>To delete a connection, click it one time, then click the [-] button</li>"
         "<li>To connect a connection, double-click it</li>"
         "<li>To disconnect a normal connection, right-click it while connected</li>"
-        "<li>To Open, Edit or Delete a connection, right-click the connection when"
+        "<li>To Connect, Edit, Delete or copy the F12 macro of a connection, right-click the connection when"
         " not connected</li>"
         "<li>To move a connection up or down in the list, click the 'up' or 'down'"
         " arrow buttons</li>"
         "<li>To scan automatically through all connected viewers, click the 'clock' button</li>"
         "<li>To 'listen' for an incoming VNC connection, click the 'ear' button</li>"
         "<li>To disconnect or edit a 'listening' connection, right-click it while connected</li>"
-        "<li>To change application options, click the 'hamburger' (three horizontal lines) button</li>"
+        "<li>To change application options, click the settings button (looks like three control sliders)</li>"
         "<li>To perform remote actions, press F8 when a remote host is being displayed</li></ul>"
         "<hr>"
         "<p><center>Many thanks to the <em>FLTK</em>, <em>libvncserver</em> and"
@@ -2603,7 +2616,7 @@ void svShowAppOptions ()
 
 
     Fl_Box * lblSep01 = new Fl_Box(nXPos, nYPos += nYStep + 14,
-    	100, 28, "Appearance Options");
+        100, 28, "Appearance Options");
     lblSep01->labelsize(app->nAppFontSize);
     lblSep01->align(FL_ALIGN_CENTER);
     lblSep01->labelfont(1);
