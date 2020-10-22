@@ -47,6 +47,7 @@ void VncObject::createVNCListener ()
     itm->scaling = 'f';
     itm->showRemoteCursor = true;
     itm->isListener = true;
+    itm->ignoreInactive = true;
 
     // set host list status icon
     itm->icon = app->iconDisconnected;
@@ -57,7 +58,7 @@ void VncObject::createVNCListener ()
 
     app->hostList->redraw();
 
-    VncObject::createVNCObject(itm); //, true);
+    VncObject::createVNCObject(itm);
 }
 
 
@@ -65,7 +66,7 @@ void VncObject::createVNCListener ()
  * libvnc client / VncObject object
  * (static method)
  */
-void VncObject::createVNCObject (HostItem * itm) //, bool listen)
+void VncObject::createVNCObject (HostItem * itm)
 {
     // if itm is null or our viewer is already created, return
     if (itm == NULL
@@ -83,7 +84,16 @@ void VncObject::createVNCObject (HostItem * itm) //, bool listen)
 
         if (itm->vnc == NULL)
         {
-            svMessageWindow("Error: Cannot create new VncObject", "SpiritVNC - FLTK");
+            //svMessageWindow("Error: Cannot create new VncObject", "SpiritVNC - FLTK");
+            fl_beep(FL_BEEP_DEFAULT);
+            return;
+        }
+
+        // address is missing on non-listening itm's
+        if (itm->isListener == false && itm->hostAddress == "")
+        {
+            fl_beep(FL_BEEP_DEFAULT);
+            svMessageWindow("Error: Host address is missing", "SpiritVNC - FLTK");
             return;
         }
 
@@ -284,11 +294,8 @@ void VncObject::endViewer ()
         // host disconnected unexpectedly / interrupted connection
         if (itm->isConnected == true && itm->hasDisconnectRequest == false)
         {
-            if (itm->isListener == false)
-            {
-                itm->icon = app->iconDisconnectedError;
-                Fl::awake(svHandleListItemIconChange);
-            }
+            itm->icon = app->iconDisconnectedError;
+            Fl::awake(svHandleListItemIconChange);
 
             svLogToFile("Unexpectedly disconnected from '" + itm->name +
               "' - " + itm->hostAddress);
@@ -298,12 +305,9 @@ void VncObject::endViewer ()
         if ((itm->isConnected == true || itm->isConnecting == true)
             && itm->hasDisconnectRequest == true)
         {
-            if (itm->isListener == false)
-            {
-                // set host list item status icon
-                itm->icon = app->iconDisconnected;
-                Fl::awake(svHandleListItemIconChange);
-            }
+            // set host list item status icon
+            itm->icon = app->iconDisconnected;
+            Fl::awake(svHandleListItemIconChange);
 
             if (app->shuttingDown)
             {
@@ -371,6 +375,7 @@ bool VncObject::fitsScroller ()
         return false;
 
     const rfbClient * cl = itm->vnc->vncClient;
+
     if (cl == NULL)
         return false;
 
@@ -737,8 +742,6 @@ char * VncObject::handlePassword (rfbClient * cl)
 /* (instance method) */
 void VncObject::setObjectVisible ()
 {
-    //const HostItem * itml = static_cast<HostItem *>(itm);
-
     if (itm == NULL || vncClient == NULL)
         return;
 
@@ -900,13 +903,13 @@ void VncViewer::draw ()
         int isize = cl->width * cl->height * nBytesPerPixel;
 
         // if there's an alpha byte, set it to 255
-		if (nBytesPerPixel == 2 || nBytesPerPixel == 4)
+        if (nBytesPerPixel == 2 || nBytesPerPixel == 4)
         {
             for (int i = (nBytesPerPixel - 1); i < isize; i+= nBytesPerPixel)
                 cl->frameBuffer[i] = 255;
         }
 
-		imgZ = new Fl_RGB_Image(cl->frameBuffer, cl->width, cl->height, nBytesPerPixel);
+        imgZ = new Fl_RGB_Image(cl->frameBuffer, cl->width, cl->height, nBytesPerPixel);
 
         if (imgZ != NULL)
         {
@@ -1038,7 +1041,7 @@ int VncViewer::handle (int event)
             }
             break;
         case FL_MOUSEWHEEL:
-        	{
+          {
             int nYWheel = Fl::event_dy();
 
             // handle vertical scrolling
@@ -1100,21 +1103,21 @@ int VncViewer::handle (int event)
             return 1;
             break;
         case FL_PASTE:
-			{
-				int intClipLen = Fl::event_length();
-				char strClipText[intClipLen];
+      {
+        int intClipLen = Fl::event_length();
+        char strClipText[intClipLen];
 
-				if (intClipLen > 0)
-				{
-					strncpy(strClipText, Fl::event_text(), intClipLen);
+        if (intClipLen > 0)
+        {
+          strncpy(strClipText, Fl::event_text(), intClipLen);
 
-					// send clipboard text to remote server
-					SendClientCutText(app->vncViewer->vnc->vncClient,
-						const_cast<char *>(strClipText), intClipLen);
-				}
-				return 1;
-			break;
-			}
+          // send clipboard text to remote server
+          SendClientCutText(app->vncViewer->vnc->vncClient,
+            const_cast<char *>(strClipText), intClipLen);
+        }
+        return 1;
+      break;
+      }
         default:
             break;
     }

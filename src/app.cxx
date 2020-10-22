@@ -53,10 +53,10 @@ int SVInput::handle (int e)
 
         // create context menu
         const Fl_Menu_Item miMain[] = {
-            {"Undo", 0, 0, 0, FL_MENU_DIVIDER},
-            {"Cut"},
-            {"Copy"},
-            {"Paste"},
+            {"Undo",  0, 0, 0, FL_MENU_DIVIDER, 0, 31, app->nMenuFontSize},
+            {"Cut",   0, 0, 0, 0,               0, 31, app->nMenuFontSize},
+            {"Copy",  0, 0, 0, 0,               0, 31, app->nMenuFontSize},
+            {"Paste", 0, 0, 0, 0,               0, 31, app->nMenuFontSize},
             {0}
         };
 
@@ -112,10 +112,10 @@ int SVSecretInput::handle (int e)
 
         // create context menu
         const Fl_Menu_Item miMain[] = {
-            {"Undo", 0, 0, 0, FL_MENU_DIVIDER},
-            {"Cut", 0, 0, 0, FL_MENU_INACTIVE},
-            {"Copy", 0, 0, 0, FL_MENU_INACTIVE},
-            {"Paste"},
+            {"Undo",  0, 0, 0, FL_MENU_DIVIDER,  0, 31, app->nMenuFontSize},
+            {"Cut",   0, 0, 0, FL_MENU_INACTIVE, 0, 31, app->nMenuFontSize},
+            {"Copy",  0, 0, 0, FL_MENU_INACTIVE, 0, 31, app->nMenuFontSize},
+            {"Paste", 0, 0, 0, 0,                0, 31, app->nMenuFontSize},
             {0}
         };
 
@@ -477,6 +477,7 @@ void svConfigReadCreateHostList ()
     Fl::set_font(31, app->strListFont.c_str());
     app->hostList->textfont(31);
     app->hostList->textsize(app->nListFontSize);
+    app->nMenuFontSize = app->nListFontSize;
 }
 
 
@@ -557,7 +558,7 @@ void svConfigWrite ()
     {
         itm = static_cast<HostItem *>(app->hostList->data(i));
 
-        if (itm == NULL || itm->name == "Listening")
+        if (itm == NULL || itm->isListener == true)
             continue;
 
         ofs << "host=" << itm->name << std::endl;
@@ -859,6 +860,12 @@ void svDeleteItem (int nItem)
         inMenu = true;
 
     const HostItem * itm = static_cast<HostItem *>(app->hostList->data(nItem));
+
+    if (itm == NULL)
+    {
+        fl_beep(FL_BEEP_DEFAULT);
+        return;
+    }
 
     // listening connection
     if (itm->isListener)
@@ -1181,17 +1188,24 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
     // get the widget's name through user_data()
     const char * strName = static_cast<char *>(btn->user_data());
 
-    if (strName == NULL || strName[0] == '\0')
+    if (strName == NULL)
         return;
 
+    bool isSeparator;
+
     int nListVal = app->hostList->value();
+
+    if (nListVal > 0 && strcmp(app->hostList->text(nListVal), "@C16@.· · ·") == 0)
+        isSeparator = true;
+    else
+        isSeparator = false;
 
     // add new item button
     if (strcmp(strName, SV_LIST_BTN_ADD) == 0)
         svShowItemOptions(NULL);
 
     // delete current item button
-    if (strcmp(strName, SV_LIST_BTN_DEL) == 0)
+    if (strcmp(strName, SV_LIST_BTN_DEL) == 0 && isSeparator == false)
     {
         fl_message_hotspot(0);
         fl_message_title("SpiritVNC - Delete Item");
@@ -1199,7 +1213,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
         if (nListVal > 0)
             svDeleteItem(nListVal);
         else
-            svMessageWindow("No item is selected so nothing was deleted",
+            svMessageWindow("Nothing was selected so nothing was deleted",
                 "SpiritVNC - Delete Item");
     }
 
@@ -1212,7 +1226,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
         svShowAboutHelp();
 
     // move item up button
-    if (strcmp(strName, SV_LIST_BTN_UP) == 0)
+    if (strcmp(strName, SV_LIST_BTN_UP) == 0 && isSeparator == false)
     {
         if (nListVal > 1)
         {
@@ -1223,7 +1237,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
     }
 
     // move item down button
-    if (strcmp(strName, SV_LIST_BTN_DOWN) == 0)
+    if (strcmp(strName, SV_LIST_BTN_DOWN) == 0 && isSeparator == false)
     {
         if (nListVal < app->hostList->size())
         {
@@ -1298,6 +1312,8 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
 
     static bool menuUp;
 
+    int nF12Flags = 0;
+
     // *** DO *NOT* CHECK vnc FOR NULL HERE!!! ***
     // *** IT'S OKAY IF vnc IS NULL AT THIS POINT!!! ***
 
@@ -1313,7 +1329,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             // start new connection
             if (itm->isConnected == false
                 && itm->isConnecting == false
-                && itm->name != "Listening")
+                && itm->isListener == false)
             {
               VncObject::hideMainViewer();
               VncObject::createVNCObject(itm);
@@ -1346,10 +1362,15 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
 
         VncObject::hideMainViewer();
 
+        // special visibility handling for listening item
+        if (itm->isListener == true)
+            if (vnc != NULL && itm->isConnected)
+                vnc->setObjectVisible();
+
         // disconnect right single-clicked viewer
         if ((itm->isConnected == true || itm->isConnecting == true)
             && itm->hasDisconnectRequest == false
-            && itm->name != "Listening")
+            && itm->isListener == false)
         {
             itm->hasDisconnectRequest = true;
 
@@ -1362,7 +1383,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
         if (itm->isConnected == false
             && itm->isConnecting == false
             && itm->hasDisconnectRequest == false
-            && itm->name != "Listening"
+            && itm->isListener == false
             && menuUp == false)
         {
 
@@ -1371,15 +1392,23 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             char strError[FL_PATH_MAX] = {0};
             strncat(strError, itm->lastErrorMessage.c_str(), FL_PATH_MAX - 1);
 
+            // enable / disable error message in menu
             if (itm->lastErrorMessage != "")
-              nFlags = FL_MENU_INACTIVE | FL_MENU_DIVIDER;
+                nFlags = FL_MENU_INACTIVE | FL_MENU_DIVIDER;
+
+            // enable / disable 'Copy F12 macro' item in menu
+            if (itm->f12Macro == "")
+                nF12Flags = FL_MENU_INACTIVE;
+            else
+                nF12Flags = 0;
 
             // create context menu
             const Fl_Menu_Item miMain[] = {
-                {strError, 0, 0, 0, nFlags},
-                {"Connect"},
-                {"Edit"},
-                {"Delete..."},
+                {strError,         0, 0, 0, nFlags,    0, 31, app->nMenuFontSize},
+                {"Connect",        0, 0, 0, 0,         0, 31, app->nMenuFontSize},
+                {"Edit",           0, 0, 0, 0,         0, 31, app->nMenuFontSize},
+                {"Copy F12 macro", 0, 0, 0, nF12Flags, 0, 31, app->nMenuFontSize},
+                {"Delete...",      0, 0, 0, 0,         0, 31, app->nMenuFontSize},
                 {0}
             };
 
@@ -1403,6 +1432,13 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                     if (strcmp(strRes, "Edit") == 0)
                         svShowItemOptions(itm);
 
+                    // copy this item's F12 macro to clipboard and app f12 macro variable
+                    if (strcmp(strRes, "Copy F12 macro") == 0)
+                    {
+                        Fl::copy(itm->f12Macro.c_str(), itm->f12Macro.size(), 1);
+                        app->strF12ClipVar = itm->f12Macro;
+                    }
+
                     // delete item (and itm)
                     if (strcmp(strRes, "Delete...") == 0)
                         svDeleteItem(nHostItemNum);
@@ -1424,7 +1460,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             {
                 // create context menu
                 const Fl_Menu_Item miM[] = {
-                    {"Delete"},
+                    {"Delete", 0, 0, 0, 0, 0, 31, app->nMenuFontSize},
                     {0}
                 };
 
@@ -1449,10 +1485,17 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             {
                 // listener is connected
 
+                // enable / disable 'Paste F12 macro' item in menu
+                if (app->strF12ClipVar == "")
+                    nF12Flags = FL_MENU_INACTIVE;
+                else
+                    nF12Flags = 0;
+
                 // create context menu
                 const Fl_Menu_Item miMain[] = {
-                    {"Disconnect"},
-                    {"Edit"},
+                    {"Disconnect",      0, 0, 0, 0,         0, 31, app->nMenuFontSize},
+                    {"Edit",            0, 0, 0, 0,         0, 31, app->nMenuFontSize},
+                    {"Paste F12 macro", 0, 0, 0, nF12Flags, 0, 31, app->nMenuFontSize},
                     {0}
                 };
 
@@ -1481,6 +1524,13 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                         // edit itm
                         if (strcmp(strRes, "Edit") == 0)
                             svShowItemOptions(itm);
+
+                        // 'paste' app-private F12 macro variable to listening item
+                        if (strcmp(strRes, "Paste F12 macro") == 0)
+                        {
+                            itm->f12Macro = app->strF12ClipVar;
+                            app->strF12ClipVar = "";
+                        }
                     }
                 }
 
@@ -1697,9 +1747,20 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
         // add item to host list if new
         if (svItemNumFromItm(itm) == 0)
         {
-            app->hostList->add(itm->name.c_str(), itm);
-            app->hostList->icon(app->hostList->size(), app->iconDisconnected);
-            app->hostList->make_visible(app->hostList->size());
+            // insert near selected item, otherwise at bottom/end
+            if (app->hostList->size() > 0 && app->hostList->value() > 0)
+            {
+                app->hostList->insert(app->hostList->value() + 1, itm->name.c_str(), itm);
+                app->hostList->icon(app->hostList->value() + 1, app->iconDisconnected);
+                app->hostList->make_visible(app->hostList->value() + 1);
+            }
+            else
+            {
+                app->hostList->add(itm->name.c_str(), itm);
+                app->hostList->icon(app->hostList->size(), app->iconDisconnected);
+                app->hostList->make_visible(app->hostList->size());
+            }
+
             Fl::check();
         }
 
@@ -2395,7 +2456,7 @@ void svShowAboutHelp ()
 
     Fl_Help_View * hv = new Fl_Help_View(10, 10, nWinWidth - 20, nWinHeight - 70);
 
-    hv->color(17);
+    hv->color(FL_BACKGROUND2_COLOR);
     hv->textsize(app->nAppFontSize);
     hv->textfont(0);
 

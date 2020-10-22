@@ -120,6 +120,7 @@ public:
         nAppFontSize(10),
         strListFont("Sans"),
         nListFontSize(10),
+        nMenuFontSize(11),
         blockLocalClipboardHandling(false),
         packButtons(NULL),
         showReverseConnect(true),
@@ -215,6 +216,7 @@ public:
     int nAppFontSize;
     std::string strListFont;
     int nListFontSize;
+    int nMenuFontSize;
     bool blockLocalClipboardHandling;
     Fl_Pack * packButtons;
     bool showReverseConnect;
@@ -224,6 +226,7 @@ public:
     int savedH;
     int connectedItems;
     pthread_t msgThread;
+    std::string strF12ClipVar;
 } extern * app;
 
 
