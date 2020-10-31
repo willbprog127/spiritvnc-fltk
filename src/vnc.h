@@ -96,9 +96,10 @@ public:
     void setObjectVisible ();
     bool fitsScroller ();
     void endViewer ();
+
     //  static
     static void hideMainViewer ();
-    static void endAndDeleteViewer (VncObject *);
+    static void endAndDeleteViewer (VncObject **);
     static void endAllViewers ();
     static char * handlePassword (rfbClient *);
     static void handleCursorShapeChange (rfbClient *, int, int, int, int, int);
@@ -117,12 +118,13 @@ public:
 class VncViewer : public Fl_Box
 {
 public:
-    VncViewer (int x, int y, int w, int h, const char * label = 0)
-        : Fl_Box(x, y, w, h, label)
-        {
-            vnc = NULL;
-            box(FL_FLAT_BOX);
-        }
+    VncViewer (int x, int y, int w, int h, const char * label = 0) :
+    Fl_Box(x, y, w, h, label),
+    vnc(NULL)
+    {
+        box(FL_FLAT_BOX);
+    }
+
     VncObject * vnc;
 private:
     int handle (int);

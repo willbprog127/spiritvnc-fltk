@@ -62,12 +62,12 @@ void * svCreateSSHConnection (void * data)
     int sockSSHForwardSock = -1;
     int i = 0;
     int nSSHAuthType = LIBSSH2_AUTH_NONE;
-    int nSSHSockOption = 0;
-    int nLoopErrors = 0;
+    int nSSHSockOption;
+    int nLoopErrors;
     int nLoopErrorLimit = 100;
     unsigned int nSSHLocalPort = 0;
-    ssize_t sztSSHLen = 0;
-    ssize_t sztSSHWr = 0;
+    ssize_t sztSSHLen;
+    ssize_t sztSSHWr;
 
     char * strSSHLocalAddress = NULL;
     char sshBuffer[16384] = {0};
@@ -88,7 +88,7 @@ void * svCreateSSHConnection (void * data)
 
     if (itm == NULL)
     {
-        itm->hasError = true;
+        //itm->hasError = true;
         return SV_RET_VOID;
     }
 
@@ -166,6 +166,8 @@ void * svCreateSSHConnection (void * data)
     // try public key authentication
     if (nSSHAuthType & LIBSSH2_AUTH_PUBLICKEY)
     {
+        authError = false;
+
         if (libssh2_userauth_publickey_fromfile(sshSession, itm->sshUser.c_str(),
                 itm->sshKeyPublic.c_str(), itm->sshKeyPrivate.c_str(),
                     itm->sshPass.c_str()) !=0)
@@ -173,7 +175,6 @@ void * svCreateSSHConnection (void * data)
             svDebugLog("svCreateSSHConnection -  ERROR - Authentication by public key failed");
             authError = true;
         }
-        authError = false;
         //svLogToFile("svCreateSSHConnection - Authentication by public key succeeded");
     }
 
@@ -249,7 +250,7 @@ void * svCreateSSHConnection (void * data)
         nSSHLocalPort = ntohs(structSSHSockAddress.sin_port);
 
         snprintf(strError, 255, "svCreateSSHConnection - Forwarding connection from %s:%u"
-            " local to remote %s:%u", strSSHLocalAddress, nSSHLocalPort,
+            " local to remote %s:%i", strSSHLocalAddress, nSSHLocalPort,
             "localhost", atoi(itm->vncPort.c_str()));
         svDebugLog(strError);
 
@@ -371,7 +372,7 @@ void * svCreateSSHConnection (void * data)
             if (libssh2_channel_eof(sshChannel))
             {
                 snprintf(strError, 255, "svCreateSSHConnection - The server"
-                    " at %s:%u disconnected", "localhost", atoi(itm->vncPort.c_str()));
+                    " at %s:%i disconnected", "localhost", atoi(itm->vncPort.c_str()));
                 svDebugLog(strError);
                 sshError = true;
                 break;

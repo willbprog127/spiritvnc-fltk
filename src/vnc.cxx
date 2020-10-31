@@ -79,14 +79,15 @@ void VncObject::createVNCObject (HostItem * itm)
     {
         // create new vnc viewer
         itm->vnc = new VncObject();
-        VncObject * vnc = itm->vnc;
-        vnc->itm = itm;
 
         if (itm->vnc == NULL)
         {
             fl_beep(FL_BEEP_DEFAULT);
             return;
         }
+
+        VncObject * vnc = itm->vnc;
+        vnc->itm = itm;
 
         // address is missing on non-listening itm's
         if (itm->isListener == false && itm->hostAddress == "")
@@ -161,8 +162,8 @@ void VncObject::createVNCObject (HostItem * itm)
                 svMessageWindow("Could not open the public or private SSH key "
                   "file for '" + itm->name + "' - " + itm->hostAddress);
 
-                if (vnc != NULL && vnc->vncClient != NULL)
-                    VncObject::endAndDeleteViewer(vnc);
+                if (vnc->vncClient != NULL)
+                    VncObject::endAndDeleteViewer(&vnc);
 
                 svHandleThreadConnection(itm);
 
@@ -190,7 +191,7 @@ void VncObject::createVNCObject (HostItem * itm)
                 itm->hasError = true;
 
                 if (vnc != NULL && vnc->vncClient != NULL)
-                    VncObject::endAndDeleteViewer(vnc);
+                    VncObject::endAndDeleteViewer(&vnc);
 
                 svHandleThreadConnection(itm);
 
@@ -234,7 +235,7 @@ void VncObject::createVNCObject (HostItem * itm)
             itm->hasError = true;
 
             if (vnc != NULL && vnc->vncClient != NULL)
-                VncObject::endAndDeleteViewer(vnc);
+                VncObject::endAndDeleteViewer(&vnc);
 
             svHandleThreadConnection(itm);
 
@@ -269,7 +270,7 @@ void VncObject::endAllViewers ()
             {
                 itm->hasDisconnectRequest = true;
 
-                VncObject::endAndDeleteViewer(vnc);
+                VncObject::endAndDeleteViewer(&vnc);
             }
 
             vnc = NULL;
@@ -353,15 +354,15 @@ void VncObject::endViewer ()
 
 /* calls endViewer and cleans up associated VncObject * memory */
 /* (static method) */
-void VncObject::endAndDeleteViewer (VncObject * vnc)
+void VncObject::endAndDeleteViewer (VncObject ** vnc)
 {
     if (vnc == NULL)
         return;
 
-    vnc->endViewer();
+    (*vnc)->endViewer();
 
-    delete vnc;
-    vnc = NULL;
+    delete *vnc;
+    *vnc = NULL;
 }
 
 
@@ -410,7 +411,7 @@ void VncObject::handleCursorShapeChange (rfbClient * cl, int xHot, int yHot, int
     if (nBytesPerPixel == 2 || nBytesPerPixel == 4)
     {
         int nM = 0;
-        int nMV = 0;
+        int nMV;
 
         for (int i = (nBytesPerPixel - 1); i < nSSize; i += nBytesPerPixel)
         {
@@ -443,8 +444,8 @@ void VncObject::handleCursorShapeChange (rfbClient * cl, int xHot, int yHot, int
 
     svHandleThreadCursorChange(NULL);
 
-    if (img != NULL)
-        delete img;
+    //if (img != NULL)
+    delete img;
 }
 
 
@@ -527,9 +528,9 @@ void * VncObject::initVNCConnection (void * data)
 
     if (itm == NULL)
     {
-        itm->isConnected = false;
-        itm->isConnecting = false;
-        itm->hasError = true;
+        //itm->isConnected = false;
+        //itm->isConnecting = false;
+        //itm->hasError = true;
 
         Fl::awake(svHandleThreadConnection, itm);
 
@@ -666,6 +667,8 @@ void VncObject::masterMessageLoop (void * notUsed)
 {
     HostItem * itm = NULL;
     VncObject * vnc = NULL;
+
+    (void) notUsed;
 
     int checkDelay = 0;
 
@@ -829,7 +832,7 @@ void VncObject::checkVNCMessages (VncObject * vnc)
 
     if (nMsg < 0)
     {
-        VncObject::endAndDeleteViewer(vnc);
+        VncObject::endAndDeleteViewer(&vnc);
         return;
     }
 
@@ -840,7 +843,7 @@ void VncObject::checkVNCMessages (VncObject * vnc)
 
         if (HandleRFBServerMessage(vnc->vncClient) == FALSE)
         {
-            VncObject::endAndDeleteViewer(vnc);
+            VncObject::endAndDeleteViewer(&vnc);
             return;
         }
         else
@@ -1115,7 +1118,7 @@ int VncViewer::handle (int event)
             const_cast<char *>(strClipText), intClipLen);
         }
         return 1;
-      break;
+      //break;
       }
         default:
             break;
@@ -1130,6 +1133,8 @@ void VncViewer::sendCorrectedKeyEvent (const char * strIn, const int nKey,
     HostItem * itm, rfbClient * cl, bool downState)
 {
     int nK = Fl::event_key();
+
+    (void) nKey;
 
     if (cl == NULL || itm == NULL)
         return;

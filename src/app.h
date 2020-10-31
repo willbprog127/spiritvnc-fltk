@@ -88,10 +88,14 @@ public:
         vncViewer(NULL),
         iconDisconnected(NULL),
         iconDisconnectedError(NULL),
+        iconDisconnectedBigError(NULL),
         iconConnected(NULL),
         iconNoConnect(NULL),
         iconConnecting(NULL),
         libVncVncPointer((void *)"VncObject"),
+        userName(""),
+        configPath(""),
+        configPathAndFile(""),
         nConnectionTimeout(SV_CONNECTION_TIMEOUT_SECS),
         nViewersWaiting(0),
         verboseLogging(false),
@@ -128,7 +132,9 @@ public:
         savedY(0),
         savedW(800),
         savedH(600),
-        connectedItems(0)
+        connectedItems(0),
+        msgThread(0),
+        strF12ClipVar("")
     {
         // get user's login name for reading/writing config file
 

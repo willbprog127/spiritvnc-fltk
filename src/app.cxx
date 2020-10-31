@@ -149,6 +149,8 @@ int SVSecretInput::handle (int e)
 /* child window 'OK' button callback - closes child windows (settings, options, etc */
 void svCloseChildWindow (Fl_Widget * button, void * data)
 {
+    (void) button;
+
     Fl_Window * childWindow = static_cast<Fl_Window *>(data);
 
     // close the child window, if valid
@@ -606,6 +608,8 @@ void svConnectionWatcher (void * notUsed)
     HostItem * itm = NULL;
     VncObject * vnc = NULL;
 
+    (void) notUsed;
+
     // only check if there are waiting viewers
     if (app->nViewersWaiting > 0)
     {
@@ -636,7 +640,7 @@ void svConnectionWatcher (void * notUsed)
                 {
                     svDebugLog("svConnectionWatcher - 'Soft' timeout reached, giving up");
 
-                    VncObject::endAndDeleteViewer(vnc);
+                    VncObject::endAndDeleteViewer(&vnc);
 
                     app->nViewersWaiting --;
 
@@ -658,7 +662,7 @@ void svConnectionWatcher (void * notUsed)
             {
                 app->nViewersWaiting --;
                 svDebugLog("svConnectionWatcher - SSH problem during connection, ending");
-                VncObject::endAndDeleteViewer(itm->vnc);
+                VncObject::endAndDeleteViewer(&itm->vnc);
             }
         }
     }
@@ -681,7 +685,7 @@ void svConnectionWatcher (void * notUsed)
         // check if connection has been inactive, unless this itm is ignoring
         if (vnc->inactiveSeconds >= app->nDeadTimeout && itm->ignoreInactive == false)
             // remote host hasn't responded in time allotted, disconnect
-            VncObject::endAndDeleteViewer(vnc);
+            VncObject::endAndDeleteViewer(&vnc);
         else
             vnc->inactiveSeconds ++;
     }
@@ -993,6 +997,8 @@ void svHandleAppOptionsButtons (Fl_Widget * widget, void * data)
     Fl_Window * childWindow = app->childWindowBeingDisplayed;
     Fl_Button * btn = static_cast<Fl_Button *>(widget);
 
+    (void) data;
+
     if (childWindow == NULL || btn == NULL)
     {
         childWindow->hide();
@@ -1002,13 +1008,13 @@ void svHandleAppOptionsButtons (Fl_Widget * widget, void * data)
     }
 
     // get the widget's name through user_data()
-    const char * strName = static_cast<char *>(widget->user_data());
+    const char * strCtlName = static_cast<char *>(widget->user_data());
 
-    if (strName == NULL)
+    if (strCtlName == NULL)
         return;
 
     // cancel button clicked
-    if (strcmp(strName, "btnCancel") == 0)
+    if (strcmp(strCtlName, "btnCancel") == 0)
     {
         childWindow->hide();
         app->childWindowVisible = false;
@@ -1016,14 +1022,14 @@ void svHandleAppOptionsButtons (Fl_Widget * widget, void * data)
     }
 
     // save button clicked
-    if (strcmp(strName, "btnSave") == 0)
+    if (strcmp(strCtlName, "btnSave") == 0)
     {
         Fl_Widget * wid = NULL;
 
         int nChildCount = childWindow->children();
 
         char * strTemp = NULL;
-        std::string strName;
+        std::string strName = strCtlName;
 
         for (int i = 0; i < nChildCount; i ++)
         {
@@ -1112,6 +1118,8 @@ void svHandleF8Buttons (Fl_Widget * widget, void * data)
 {
     Fl_Window * childWindow = app->childWindowBeingDisplayed;
 
+    (void) data;
+
     if (childWindow == NULL || widget == NULL)
     {
         childWindow->hide();
@@ -1185,6 +1193,8 @@ void svHandleF8Buttons (Fl_Widget * widget, void * data)
 void svHandleHostListButtons (Fl_Widget * button, void * data)
 {
     Fl_Button * btn = static_cast<Fl_Button *>(button);
+
+    (void) data;
 
     if (btn == NULL)
         return;
@@ -1308,6 +1318,9 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
     int event = app->hostList->when();
     int nHostItemNum = app->hostList->value();
 
+    (void) list;
+    (void) data2;
+
     HostItem * itm = static_cast<HostItem *>(app->hostList->data(nHostItemNum));
 
     if (itm == NULL)
@@ -1317,7 +1330,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
 
     static bool menuUp;
 
-    int nF12Flags = 0;
+    int nF12Flags;
 
     // *** DO *NOT* CHECK vnc FOR NULL HERE!!! ***
     // *** IT'S OKAY IF vnc IS NULL AT THIS POINT!!! ***
@@ -1379,7 +1392,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
         {
             itm->hasDisconnectRequest = true;
 
-            VncObject::endAndDeleteViewer(vnc);
+            VncObject::endAndDeleteViewer(&vnc);
 
             return;
         }
@@ -1518,7 +1531,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
                         {
                             int iIndx = svItemNumFromItm(itm);
 
-                            VncObject::endAndDeleteViewer(vnc);
+                            VncObject::endAndDeleteViewer(&vnc);
                             svDeleteItem(iIndx);
 
                             menuUp = false;
@@ -1554,6 +1567,8 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
     HostItem * itm = app->itmBeingEdited;
     Fl_Button * btn = static_cast<Fl_Button *>(widget);
 
+    (void) data;
+
     if (itm == NULL || childWindow == NULL || btn == NULL)
     {
         childWindow->hide();
@@ -1564,13 +1579,13 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
     }
 
     // get the widget's name through user_data()
-    const char * strName = static_cast<char *>(widget->user_data());
+    const char * strCtlName = static_cast<char *>(widget->user_data());
 
-    if (strName == NULL)
+    if (strCtlName == NULL)
         return;
 
     // cancel button clicked
-    if (strcmp(strName, SV_ITM_BTN_CANCEL) == 0)
+    if (strcmp(strCtlName, SV_ITM_BTN_CANCEL) == 0)
     {
         childWindow->hide();
         app->childWindowVisible = false;
@@ -1579,7 +1594,7 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
     }
 
     // delete button clicked
-    if (strcmp(strName, SV_ITM_BTN_DEL) == 0)
+    if (strcmp(strCtlName, SV_ITM_BTN_DEL) == 0)
     {
         fl_message_hotspot(0);
         fl_message_title("SpiritVNC - Delete Item");
@@ -1603,14 +1618,14 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
     }
 
     // save button clicked
-    if (strcmp(strName, SV_ITM_BTN_SAVE) == 0)
+    if (strcmp(strCtlName, SV_ITM_BTN_SAVE) == 0)
     {
         Fl_Widget * wid = NULL;
 
         int nChildCount = childWindow->children();
 
         char * strTemp = NULL;
-        std::string strName;
+        std::string strName = strCtlName;
 
         // iterate through child controls and save their settings
         for (int i = 0; i < nChildCount; i ++)
@@ -1785,8 +1800,10 @@ void svHandleItmOptionsButtons (Fl_Widget * widget, void * data)
 
 
 /* sends new clipboard text to the currently displayed vnc host */
-void svHandleLocalClipboard (int source, void * notused)
+void svHandleLocalClipboard (int source, void * notUsed)
 {
+    (void) notUsed;
+
     // don't process clipboard if there's no remote server being displayed
     // of it's the selection buffer
     if (app->vncViewer->vnc == NULL || source != 1)
@@ -1808,6 +1825,8 @@ void svHandleLocalClipboard (int source, void * notused)
 /* handle main window close event */
 void svHandleMainWindowEvents (Fl_Widget * window, void * data)
 {
+    (void) data;
+
     int event = window->when();
 
     // window closing
@@ -1888,6 +1907,7 @@ void svHandleListItemIconChange (void * notUsed)
     int i;
     int listCount = app->hostList->size();
     HostItem * itm = NULL;
+    (void) notUsed;
 
     // iterate through host list and set status icons for items
     for (i = 0; i < listCount; i++)
@@ -1920,7 +1940,6 @@ void svHandleThreadConnection (void * data)
         return;
 
     int nItem = svItemNumFromItm(itm);
-    int nSelectedHost = app->hostList->value();
 
     // set viewer as connected
     if (itm->isWaitingForShow == true)
@@ -1940,7 +1959,7 @@ void svHandleThreadConnection (void * data)
           itm->hostAddress);
 
         // show viewer if it matches the selected host list item
-        nSelectedHost = app->hostList->value();
+        int nSelectedHost = app->hostList->value();
 
         if (nItem == nSelectedHost && itm->isListener == false)
         {
@@ -1998,7 +2017,7 @@ void svHandleThreadConnection (void * data)
         {
             svDebugLog("svConnectionWatcher - 'Soft' timeout reached, giving up");
 
-            VncObject::endAndDeleteViewer(vnc);
+            VncObject::endAndDeleteViewer(&vnc);
 
             app->nViewersWaiting --;
 
@@ -2021,6 +2040,8 @@ void svHandleThreadConnection (void * data)
 /* handle thread cursor change */
 void svHandleThreadCursorChange (void * notUsed)
 {
+    (void) notUsed;
+
     if (app->vncViewer == NULL)
         return;
 
@@ -2156,6 +2177,7 @@ HostItem * svItmFromVnc (VncObject * v)
 void svItmOptionsChoosePrvKeyBtnCallback (Fl_Widget * button, void * data)
 {
     SVInput * inPrvKey = static_cast<SVInput *>(data);
+    (void) button;
 
     if (inPrvKey == NULL)
         return;
@@ -2178,6 +2200,7 @@ void svItmOptionsChoosePrvKeyBtnCallback (Fl_Widget * button, void * data)
 void svItmOptionsChoosePubKeyBtnCallback (Fl_Widget * button, void * data)
 {
     SVInput * inPubKey = static_cast<SVInput *>(data);
+    (void) button;
 
     if (inPubKey == NULL)
         return;
@@ -2200,6 +2223,8 @@ void svItmOptionsChoosePubKeyBtnCallback (Fl_Widget * button, void * data)
 void svItmOptionsRadioButtonsCallback (Fl_Widget * button, void * data)
 {
     Fl_Radio_Round_Button * btn = static_cast<Fl_Radio_Round_Button *>(button);
+
+    (void) data;
 
     if (btn == NULL)
         return;
@@ -2301,6 +2326,8 @@ void svResizeScroller ()
 /* restore previous session's window position */
 void svRestoreWindowSizePosition (void * notUsed)
 {
+    (void) notUsed;
+
     app->mainWin->resize(app->savedX, app->savedY, app->savedW, app->savedH);
     app->mainWin->redraw();
 }
@@ -2312,6 +2339,8 @@ void svRestoreWindowSizePosition (void * notUsed)
  */
 void svScanTimer (void * data)
 {
+    (void) data;
+
     if (app->scanIsRunning == false || svThereAreConnectedItems() == false)
     {
         app->scanIsRunning = false;

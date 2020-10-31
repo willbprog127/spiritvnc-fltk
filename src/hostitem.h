@@ -47,12 +47,27 @@ class HostItem
 {
 public:
     HostItem () :
+        name(""),
+        group(""),
+        hostAddress(""),
+        vncPort(""),
+        sshPort(""),
+        sshUser(""),
+        sshPass(""),
+        sshKeyPublic(""),
+        sshKeyPrivate(""),
         sshLocalPort(0),
+        vncPassword(""),
         hostType('v'),
         vnc(NULL),
+        threadRFB(0),
         threadRFBRunning(false),
+        threadSSH(0),
+        threadLoop(0),
         sshReady(false),
         stopSSH(false),
+        vncAddressAndPort(""),
+        f12Macro(""),
         scaling('f'),
         scalingFast(false),
         showRemoteCursor(false),
@@ -70,7 +85,8 @@ public:
         hasDisconnectRequest(false),
         hasAlreadyShown(false),
         hasEnded(false),
-        icon(NULL)
+        icon(NULL),
+        lastErrorMessage("")
     {}
 
     std::string name;
