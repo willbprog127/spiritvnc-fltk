@@ -32,6 +32,8 @@ The 'pkg-config' program must be installed for building
 
 __Building__
 
+SpiritVNC - FLTK now requires a compiler that supports C++11.
+
 'cd' into the directory that has the Makefile, then issue the following command:
 
 On most Linux distros and macOS:
