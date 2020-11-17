@@ -44,7 +44,7 @@
 
 
 /* create ssh session and ssh forwarding */
-/* (this is called as a pthread because it blocks) */
+/* (this is called as a thread because it blocks) */
 void * svCreateSSHConnection (void * data)
 {
     pthread_detach(pthread_self());
@@ -72,7 +72,7 @@ void * svCreateSSHConnection (void * data)
     char * strSSHLocalAddress = NULL;
     char sshBuffer[16384] = {0};
     char * strUserAuthList = NULL;
-    char strError[255] = {0};
+    std::string strError;
     bool authError = false;
 
     LIBSSH2_SESSION * sshSession = NULL;
@@ -101,6 +101,7 @@ void * svCreateSSHConnection (void * data)
     // connect to SSH server
     sockSSHSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     structSSHSockAddress.sin_family = AF_INET;
+
     if ((structSSHSockAddress.sin_addr.s_addr = inet_addr(itm->hostAddress.c_str())) ==
         LIBSSH2_INADDR_NONE)
     {
@@ -109,7 +110,9 @@ void * svCreateSSHConnection (void * data)
         return SV_RET_VOID;
     }
 
+    // set port
     structSSHSockAddress.sin_port = htons(atoi(itm->sshPort.c_str()));
+
     if (connect(sockSSHSock, reinterpret_cast<sockaddr *>(&structSSHSockAddress),
         sizeof(sockaddr_in)) != 0)
     {
@@ -120,6 +123,7 @@ void * svCreateSSHConnection (void * data)
 
     /* Create a session instance */
     sshSession = libssh2_session_init();
+
     if (sshSession == NULL)
     {
         svDebugLog("svCreateSSHConnection - ERROR - Could not initialize SSH session");
@@ -139,8 +143,7 @@ void * svCreateSSHConnection (void * data)
     }
 
     // check which authentication methods are available
-    strUserAuthList = libssh2_userauth_list(sshSession, itm->sshUser.c_str(),
-        itm->sshUser.size());
+    strUserAuthList = libssh2_userauth_list(sshSession, itm->sshUser.c_str(), itm->sshUser.size());
 
     // add 'password' authentication to our bitmap
     if (strstr(strUserAuthList, "password"))
@@ -154,7 +157,8 @@ void * svCreateSSHConnection (void * data)
     if (nSSHAuthType & LIBSSH2_AUTH_PASSWORD)
     {
         if (libssh2_userauth_password(sshSession, itm->sshUser.c_str(),
-            itm->sshPass.c_str()) !=0) {
+            itm->sshPass.c_str()) != 0)
+        {
             svDebugLog("svCreateSSHConnection - ERROR - Authentication by password failed");
             authError = true;
         }
@@ -167,7 +171,7 @@ void * svCreateSSHConnection (void * data)
 
         if (libssh2_userauth_publickey_fromfile(sshSession, itm->sshUser.c_str(),
                 itm->sshKeyPublic.c_str(), itm->sshKeyPrivate.c_str(),
-                    itm->sshPass.c_str()) !=0)
+                    itm->sshPass.c_str()) != 0)
         {
             svDebugLog("svCreateSSHConnection -  ERROR - Authentication by public key failed");
             authError = true;
@@ -188,8 +192,7 @@ void * svCreateSSHConnection (void * data)
         structSSHSockAddress.sin_family = AF_INET;
         structSSHSockAddress.sin_port = htons(itm->sshLocalPort);
 
-        if ((structSSHSockAddress.sin_addr.s_addr = inet_addr("127.0.0.1")) ==
-            LIBSSH2_INADDR_NONE)
+        if ((structSSHSockAddress.sin_addr.s_addr = inet_addr("127.0.0.1")) == LIBSSH2_INADDR_NONE)
         {
             svDebugLog("svCreateSSHConnection - ERROR - Bad local/machine address");
             sshError = true;
@@ -199,8 +202,10 @@ void * svCreateSSHConnection (void * data)
     if (sshError == false)
     {
         nSSHSockOption = 1;
+
         setsockopt(sockSSHListenSock, SOL_SOCKET, SO_REUSEADDR, &nSSHSockOption,
             sizeof(nSSHSockOption));
+
         sltSSHSockAddressLength = sizeof(structSSHSockAddress);
 
         if (bind(sockSSHListenSock, reinterpret_cast<sockaddr *>(&structSSHSockAddress),
@@ -224,16 +229,18 @@ void * svCreateSSHConnection (void * data)
 
     if (sshError == false)
     {
-        snprintf(strError, 255, "svCreateSSHConnection - Waiting for SpiritVNC to"
-            " connect on %s:%d...", inet_ntoa(structSSHSockAddress.sin_addr),
-            ntohs(structSSHSockAddress.sin_port));
+        strError = "svCreateSSHConnection - Waiting for SpiritVNC to connect on " +
+            std::string(inet_ntoa(structSSHSockAddress.sin_addr)) + ":" +
+            std::to_string(ntohs(structSSHSockAddress.sin_port));
 
         svDebugLog(strError);
 
         itm->sshReady = true;
 
-        sockSSHForwardSock = accept(sockSSHListenSock,
-            reinterpret_cast<sockaddr *>(&structSSHSockAddress), &sltSSHSockAddressLength);
+        sockSSHForwardSock = accept(
+            sockSSHListenSock,
+            reinterpret_cast<sockaddr *>(&structSSHSockAddress),
+            &sltSSHSockAddressLength);
 
         if (sockSSHForwardSock == -1)
         {
@@ -247,9 +254,10 @@ void * svCreateSSHConnection (void * data)
         strSSHLocalAddress = inet_ntoa(structSSHSockAddress.sin_addr);
         nSSHLocalPort = ntohs(structSSHSockAddress.sin_port);
 
-        snprintf(strError, 255, "svCreateSSHConnection - Forwarding connection from %s:%u"
-            " local to remote %s:%i", strSSHLocalAddress, nSSHLocalPort,
-            "localhost", atoi(itm->vncPort.c_str()));
+        strError = "svCreateSSHConnection - Forwarding connection from " +
+            std::string(strSSHLocalAddress) + ":" + std::to_string(nSSHLocalPort) +
+            " local to remote localhost:" + itm->vncPort;
+
         svDebugLog(strError);
 
         sshChannel = libssh2_channel_direct_tcpip_ex(sshSession, "localhost",
@@ -302,8 +310,9 @@ void * svCreateSSHConnection (void * data)
             else
             if (sztSSHLen == 0)
             {
-                snprintf(strError, 255, "svCreateSSHConnection - SpiritVNC viewer disconnected"
-                    " from %s:%u", strSSHLocalAddress, nSSHLocalPort);
+                strError = "svCreateSSHConnection - SpiritVNC viewer disconnected from " +
+                    std::string(strSSHLocalAddress) + ":" + std::to_string(nSSHLocalPort);
+
                 svDebugLog(strError);
                 break;
             }
@@ -317,9 +326,10 @@ void * svCreateSSHConnection (void * data)
                 if (i < 0)
                 {
                     svDebugLog("svCreateSSHConnection - ERROR - libssh2_channel_write error");
-                    // if we exceed the loop error limit, give up
 
+                    // if we exceed the loop error limit, give up
                     nLoopErrors ++;
+
                     if (nLoopErrors > nLoopErrorLimit)
                     {
                         sshError = true;
@@ -345,6 +355,7 @@ void * svCreateSSHConnection (void * data)
             if (sztSSHLen < 0)
             {
                 svDebugLog("svCreateSSHConnection - ERROR - libssh2_channel_read error");
+
                 // if we exceed the loop error limit, give up
                 nLoopErrors ++;
 
@@ -373,8 +384,9 @@ void * svCreateSSHConnection (void * data)
 
             if (libssh2_channel_eof(sshChannel))
             {
-                snprintf(strError, 255, "svCreateSSHConnection - The server"
-                    " at %s:%i disconnected", "localhost", atoi(itm->vncPort.c_str()));
+                strError = "svCreateSSHConnection - The server at localhost:" +
+                    itm->vncPort + " disconnected";
+
                 svDebugLog(strError);
                 sshError = true;
                 break;

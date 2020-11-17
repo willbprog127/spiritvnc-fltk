@@ -83,7 +83,6 @@ public:
         hasCouldntConnect(false),
         hasError(false),
         hasDisconnectRequest(false),
-        hasAlreadyShown(false),
         hasEnded(false),
         icon(NULL),
         lastErrorMessage("")
@@ -126,7 +125,6 @@ public:
     bool hasCouldntConnect;
     bool hasError;
     bool hasDisconnectRequest;
-    bool hasAlreadyShown;
     bool hasEnded;
     Fl_Image * icon;
     std::string lastErrorMessage;

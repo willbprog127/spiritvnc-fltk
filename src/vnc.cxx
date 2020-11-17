@@ -41,8 +41,10 @@
 void VncObject::createVNCListener ()
 {
     HostItem * itm = new HostItem();
+
     if (itm == NULL)
         return;
+
     itm->name = "Listening";
     itm->scaling = 'f';
     itm->showRemoteCursor = true;
@@ -69,9 +71,9 @@ void VncObject::createVNCListener ()
 void VncObject::createVNCObject (HostItem * itm)
 {
     // if itm is null or our viewer is already created, return
-    if (itm == NULL
-        || itm->isConnected == true
-        || itm->isConnecting == true)
+    if (itm == NULL ||
+        itm->isConnected == true ||
+        itm->isConnecting == true)
         return;
 
     // if the host type is 'v' or 's', create vnc viewer
@@ -104,7 +106,6 @@ void VncObject::createVNCObject (HostItem * itm)
         itm->hasCouldntConnect = false;
         itm->hasError = false;
         itm->hasDisconnectRequest = false;
-        itm->hasAlreadyShown = false;
         itm->hasEnded = false;
         itm->lastErrorMessage = "";
 
@@ -150,15 +151,14 @@ void VncObject::createVNCObject (HostItem * itm)
             struct stat structStat;
 
             // oops, can't open ssh key file
-            if (stat(itm->sshKeyPublic.c_str(), &structStat) != 0
-                || stat(itm->sshKeyPrivate.c_str(), &structStat) != 0)
+            if (stat(itm->sshKeyPublic.c_str(), &structStat) != 0 ||
+                stat(itm->sshKeyPrivate.c_str(), &structStat) != 0)
             {
                 itm->isConnecting = false;
                 itm->hasCouldntConnect = true;
                 itm->hasError = true;
 
-                svLogToFile("ERROR - Could not open the public or private"
-                    " SSH key file");
+                svLogToFile("ERROR - Could not open the public or private SSH key file");
                 svMessageWindow("Could not open the public or private SSH key "
                   "file for '" + itm->name + "' - " + itm->hostAddress);
 
@@ -172,10 +172,7 @@ void VncObject::createVNCObject (HostItem * itm)
 
             itm->sshLocalPort = svFindFreeTcpPort();
 
-            char strVNCAddressAndPort[50] = {0};
-
-            snprintf(strVNCAddressAndPort, 50, "127.0.0.1:%i", itm->sshLocalPort);
-            itm->vncAddressAndPort = strVNCAddressAndPort;
+            itm->vncAddressAndPort = "127.0.0.1:" + std::to_string(itm->sshLocalPort);
 
             svDebugLog("svCreateVNCObject - Creating and running threadSSH");
 
@@ -263,10 +260,10 @@ void VncObject::endAllViewers ()
         if (itm != NULL)
         {
             vnc = itm->vnc;
-            if (vnc != NULL
-                && (itm->isConnected == true
-                || itm->isConnecting == true
-                || itm->isWaitingForShow == true))
+            if (vnc != NULL &&
+                (itm->isConnected == true ||
+                itm->isConnecting == true ||
+                itm->isWaitingForShow == true))
             {
                 itm->hasDisconnectRequest = true;
 
@@ -371,6 +368,7 @@ void VncObject::endAndDeleteViewer (VncObject ** vnc)
 bool VncObject::fitsScroller ()
 {
     const HostItem * itm = static_cast<HostItem *>(this->itm);
+
     if (itm == NULL || itm->vnc == NULL)
         return false;
 
@@ -401,12 +399,6 @@ void VncObject::handleCursorShapeChange (rfbClient * cl, int xHot, int yHot, int
 
     const int nSSize = nWidth * nHeight * nBytesPerPixel;
 
-    // local image buffer
-    uchar strS[nSSize];
-
-    // copy libvnc cursor image data to local image buffer
-    memcpy(strS, cl->rcSource, nSSize);
-
     // if image has alpha, apply mask
     if (nBytesPerPixel == 2 || nBytesPerPixel == 4)
     {
@@ -416,15 +408,18 @@ void VncObject::handleCursorShapeChange (rfbClient * cl, int xHot, int yHot, int
         for (int i = (nBytesPerPixel - 1); i < nSSize; i += nBytesPerPixel)
         {
             nMV = cl->rcMask[nM];
+
             if (nMV > 0)
                 nMV = 255;
-            strS[i] = nMV;
+
+            cl->rcSource[i] = nMV;
+
             nM ++;
         }
     }
 
     // create rgb image from raw data
-    Fl_RGB_Image * img = new Fl_RGB_Image(strS, nWidth, nHeight, nBytesPerPixel);
+    Fl_RGB_Image * img = new Fl_RGB_Image(cl->rcSource, nWidth, nHeight, nBytesPerPixel);
 
     if (img == NULL)
         return;
@@ -444,7 +439,6 @@ void VncObject::handleCursorShapeChange (rfbClient * cl, int xHot, int yHot, int
 
     svHandleThreadCursorChange(NULL);
 
-    //if (img != NULL)
     delete img;
 }
 
@@ -454,9 +448,8 @@ void VncObject::handleFrameBufferUpdate (rfbClient * cl) //, int x, int y, int w
 {
     VncObject * vnc = static_cast<VncObject *>(rfbClientGetClientData(cl, app->libVncVncPointer));
 
-    if (vnc == NULL ||
-        vnc->allowDrawing == false)
-            return;
+    if (vnc == NULL || vnc->allowDrawing == false)
+        return;
 
     app->vncViewer->redraw();
 }
@@ -528,10 +521,6 @@ void * VncObject::initVNCConnection (void * data)
 
     if (itm == NULL)
     {
-        //itm->isConnected = false;
-        //itm->isConnecting = false;
-        //itm->hasError = true;
-
         Fl::awake(svHandleThreadConnection, itm);
 
         return SV_RET_VOID;
@@ -554,21 +543,21 @@ void * VncObject::initVNCConnection (void * data)
         return SV_RET_VOID;
     }
 
-    char strP[1024] = {0};
+    std::string strP;
 
     // 'program name' parameter
     strParams[0] = strdup("SpiritVNCFLTK");
 
     if (itm->isListener == false)
     {
-        strncpy(strP, itm->vncAddressAndPort.c_str(), 1023);
-        strParams[1] = strdup(strP);
+        strP = itm->vncAddressAndPort;
+        strParams[1] = strdup(strP.c_str());
     }
     else
     {
-        strncpy(strP, "-listennofork", 1023);
+        strP = "-listennofork";
         vnc->vncClient->listenAddress = strdup("0.0.0.0");
-        strParams[1] = strdup(strP);
+        strParams[1] = strdup(strP.c_str());
     }
 
     // if the second parameter is invalid, get out
@@ -1002,6 +991,7 @@ int VncViewer::handle (int event)
             app->scanIsRunning = false;
             return 1;
             break;
+
         case FL_PUSH:
             // left mouse button
             if (Fl::event_button() == FL_LEFT_MOUSE)
@@ -1020,6 +1010,7 @@ int VncViewer::handle (int event)
                 return 1;
             }
             break;
+
         case FL_RELEASE:
             // left mouse button
             if (Fl::event_button() == FL_LEFT_MOUSE)
@@ -1042,6 +1033,7 @@ int VncViewer::handle (int event)
                 return 1;
             }
             break;
+
         case FL_MOUSEWHEEL:
           {
             int nYWheel = Fl::event_dy();
@@ -1066,60 +1058,69 @@ int VncViewer::handle (int event)
             }
             break;
         }
+
         case FL_MOVE:
             SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
             //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
             return 1;
             break;
+
         // ** keyboard events **
         case FL_KEYDOWN:
             sendCorrectedKeyEvent(Fl::event_text(), Fl::event_key(), itm, cl, true);
             app->scanIsRunning = false;
             return 1;
             break;
+
         case FL_SHORTCUT:
             sendCorrectedKeyEvent(Fl::event_text(), Fl::event_key(), itm, cl, true);
             app->scanIsRunning = false;
             return 1;
             break;
+
         case FL_KEYUP:
             sendCorrectedKeyEvent(Fl::event_text(), Fl::event_key(), itm, cl, false);
             app->scanIsRunning = false;
             return 1;
             break;
+
         // ** misc events **
         case FL_ENTER:
             if (vnc->imgCursor != NULL && itm->showRemoteCursor == true)
                 svHandleThreadCursorChange(NULL);
             return 1;
             break;
+
         case FL_LEAVE:
             app->mainWin->cursor(FL_CURSOR_DEFAULT);
             Fl::wait();
             return 1;
             break;
+
         case FL_FOCUS:
             return 1;
             break;
+
         case FL_UNFOCUS:
             return 1;
             break;
+
         case FL_PASTE:
-      {
-        int intClipLen = Fl::event_length();
-        char strClipText[intClipLen];
+            {
+            int intClipLen = Fl::event_length();
+            char strClipText[intClipLen];
 
-        if (intClipLen > 0)
-        {
-          strncpy(strClipText, Fl::event_text(), intClipLen);
+            if (intClipLen > 0)
+            {
+              strncpy(strClipText, Fl::event_text(), intClipLen);
 
-          // send clipboard text to remote server
-          SendClientCutText(app->vncViewer->vnc->vncClient,
-            const_cast<char *>(strClipText), intClipLen);
+              // send clipboard text to remote server
+              SendClientCutText(app->vncViewer->vnc->vncClient,
+                const_cast<char *>(strClipText), intClipLen);
+            }
+            return 1;
         }
-        return 1;
-      //break;
-      }
+
         default:
             break;
     }
