@@ -11,6 +11,10 @@ To God be the glory! :-D :heart:
 
 SpiritVNC - FLTK has a 3-Clause BSD License
 
+![SpiritVNC - FLTK screenshot](https://www.pismotek.com/media/spiritvnc-fltk-2020-11.png)
+
+
+
 - - - -
 
 __Dependencies__
