@@ -87,10 +87,7 @@ void * svCreateSSHConnection (void * data)
     HostItem * itm = static_cast<HostItem *>(data);
 
     if (itm == NULL)
-    {
-        //itm->hasError = true;
         return SV_RET_VOID;
-    }
 
     // initialize the libssh library
     if (libssh2_init(0) != 0)
@@ -175,7 +172,6 @@ void * svCreateSSHConnection (void * data)
             svDebugLog("svCreateSSHConnection -  ERROR - Authentication by public key failed");
             authError = true;
         }
-        //svLogToFile("svCreateSSHConnection - Authentication by public key succeeded");
     }
 
     // no authorization methods were successful
@@ -231,12 +227,14 @@ void * svCreateSSHConnection (void * data)
         snprintf(strError, 255, "svCreateSSHConnection - Waiting for SpiritVNC to"
             " connect on %s:%d...", inet_ntoa(structSSHSockAddress.sin_addr),
             ntohs(structSSHSockAddress.sin_port));
+
         svDebugLog(strError);
 
         itm->sshReady = true;
 
         sockSSHForwardSock = accept(sockSSHListenSock,
             reinterpret_cast<sockaddr *>(&structSSHSockAddress), &sltSSHSockAddressLength);
+
         if (sockSSHForwardSock == -1)
         {
             svDebugLog("svCreateSSHConnection - ERROR - Forwarding not accepted");
@@ -256,6 +254,7 @@ void * svCreateSSHConnection (void * data)
 
         sshChannel = libssh2_channel_direct_tcpip_ex(sshSession, "localhost",
             atoi(itm->vncPort.c_str()), strSSHLocalAddress, nSSHLocalPort);
+
         if (sshChannel == NULL)
         {
             svDebugLog("svCreateSSHConnection - ERROR - Could not open the"
@@ -328,7 +327,9 @@ void * svCreateSSHConnection (void * data)
                         break;
                     }
                 }
+
                 sztSSHWr += i;
+
             } while (i > 0 && sztSSHWr < sztSSHLen);
 
             nLoopErrors = 0;
@@ -346,6 +347,7 @@ void * svCreateSSHConnection (void * data)
                 svDebugLog("svCreateSSHConnection - ERROR - libssh2_channel_read error");
                 // if we exceed the loop error limit, give up
                 nLoopErrors ++;
+
                 if (nLoopErrors > nLoopErrorLimit)
                 {
                     sshError = true;

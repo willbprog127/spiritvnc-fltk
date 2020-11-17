@@ -163,22 +163,21 @@ public:
 
         // set up config file path and file
 
+
+        // for macOS / OS X
+		#if defined __APPLE__
+        configPath = "/Users/" + userName + "/.spiritvnc/";
+        #elif defined __sun__
+        // for solaris or openindiana
+        configPath = "/export/home/" + userName + "/.spiritvnc/";
+        #else
         // default is typical linux, freebsd path
         configPath = "/home/" + userName + "/.spiritvnc/";
-
-        // for current macOS / OS X
-		#ifdef __APPLE__
-        configPath = "/Users/" + userName + "/.spiritvnc/";
-        #endif
-
-        // for solaris or openindiana
-        #ifdef __sun__
-        configPath = "/export/home/" + userName + "/.spiritvnc/";
         #endif
 
         // build full path
         configPathAndFile = configPath + "spiritvnc-fltk.conf";
-   }
+    }
 
     Fl_Window * mainWin;
     Fl_Hold_Browser * hostList;
@@ -260,99 +259,52 @@ private:
 
 /* forward function declarations */
 void svCloseChildWindow (Fl_Widget *, void *);
-
 void svConfigCreateNew ();
-
 void svConfigReadCreateHostList ();
-
 void svConfigWrite ();
-
 void svConnectionWatcher (void *);
-
 void svCreateAppIcons (bool fromAppOptions = false);
-
 std::string svConvertBooleanToString (bool);
-
 bool svConvertStringToBoolean (const std::string&);
-
 void svCreateGUI ();
-
 void * svCreateSSHConnection(void *);
-
 void svDebugLog (const std::string&);
-
 void svDeleteItem (int);
-
 void svDeselectAllItems ();
-
 int svFindFreeTcpPort ();
-
 std::string svGetConfigProperty (char *);
-
 std::string svGetConfigValue (char *);
-
 void svHandleAppOptionsButtons ();
-
 void svHandleItmOptionsButtons (Fl_Widget *, void *);
-
 void svHandleLocalClipboard (int, void *);
-
 void svHandleHostListButtons (Fl_Widget *, void *);
-
 void svHandleHostListEvents (Fl_Widget *, void *);
-
 void svHandleMainWindowEvents (Fl_Widget *, void *);
-
 void svPositionWidgets ();
-
 void svHandleListItemIconChange (void * notUsed);
-
 void svHandleThreadConnection (void *);
-
 void svHandleThreadCursorChange (void * notUsed);
-
 void svInsertEmptyItem ();
-
 int svItemNumFromItm (HostItem *);
-
 int svItemNumFromVnc (VncObject *);
-
 HostItem * svItmFromVnc (VncObject *);
-
 void svItmOptionsChoosePrvKeyBtnCallback (Fl_Widget *, void *);
-
 void svItmOptionsChoosePubKeyBtnCallback (Fl_Widget *, void *);
-
 void svItmOptionsRadioButtonsCallback (Fl_Widget *, void *);
-
 void svListeningModeBegin ();
-
 void svListeningModeEnd ();
-
 void svLogToFile (const std::string&);
-
 void svMessageWindow (const std::string&, const std::string& = "SpiritVNC");
-
 bool svThereAreConnectedItems ();
-
 void svResizeScroller ();
-
 void svRestoreWindowSizePosition (void *);
-
 void svScanTimer (void *);
-
 void svSendKeyStrokesToHost (std::string&, VncObject *);
-
 void svSetUnsetMainWindowTooltips ();
-
 void svShowAboutHelp ();
-
 void svShowAppOptions ();
-
 void svShowF8Window ();
-
 void svShowItemOptions (HostItem *);
-
 void svUpdateHostListItemText ();
 
 #endif
