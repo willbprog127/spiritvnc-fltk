@@ -998,6 +998,7 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton1Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
+                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1006,6 +1007,7 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton3Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
+                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
