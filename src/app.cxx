@@ -1,6 +1,6 @@
 /*
  * app.cxx - part of SpiritVNC - FLTK
- * 2016-2020 Will Brokenbourgh https://www.pismotek.com/brainout/
+ * 2016-2021 Will Brokenbourgh https://www.pismotek.com/brainout/
  */
 
 /*
