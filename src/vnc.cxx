@@ -240,6 +240,10 @@ void VncObject::createVNCObject (HostItem * itm)
         }
     }
 
+    // add to our count of created vncObjects so we
+    // can stop 'expensive' stuff in masterMessageLoop
+    app->createdObjects ++;
+
     return;
 }
 
@@ -318,8 +322,9 @@ void VncObject::endViewer ()
             }
         }
 
-        // decrement our connecteditems count
-        app->connectedItems --;
+        // decrement our count of created vncObjects so we
+        // can check and avoid 'expensive' stuff in masterMessageLoop
+        app->createdObjects --;
 
         // stop this viewer's connection worker thread
         if (itm->threadRFBRunning == true)
@@ -496,6 +501,8 @@ void VncObject::hideMainViewer ()
 
     vnc->allowDrawing = false;
 
+    app->mainWin->cursor(FL_CURSOR_DEFAULT);
+
     Fl::lock();
     app->vncViewer->vnc = NULL;
     app->vncViewer->size(0, 0);
@@ -659,42 +666,41 @@ void VncObject::masterMessageLoop (void * notUsed)
 
     (void) notUsed;
 
-    int checkDelay = 0;
-
     while (app->shuttingDown == false)
     {
-        // iterate through the host list and check each for an active vnc object
-        for (int i = 0; i <= app->hostList->size(); i ++)
+        // only loop if there are objects alive
+        if (app->createdObjects != 0)
         {
-            Fl::lock();
-            itm = static_cast<HostItem *>(app->hostList->data(i));
-            Fl::unlock();
+            // iterate through the host list and check each for an active vnc object
+            for (int i = 0; i <= app->hostList->size(); i ++)
+            {
+                Fl::lock();
+                itm = static_cast<HostItem *>(app->hostList->data(i));
+                Fl::unlock();
 
-            if (itm == NULL)
-                continue;
+                if (itm == NULL)
+                    continue;
 
-            vnc = itm->vnc;
+                vnc = itm->vnc;
 
-            if (vnc == NULL)
-                continue;
+                if (vnc == NULL)
+                    continue;
 
-            // if this vnc object is connected and is active, process vnc messages
-            if (itm->isConnected == true
-                && itm->hasEnded == false
-                && app->shuttingDown == false)
-                    VncObject::checkVNCMessages(vnc);
+                // if this vnc object is connected and is active, process vnc messages
+                if (itm->isConnected == true
+                    && itm->hasEnded == false
+                    && app->shuttingDown == false)
+                        VncObject::checkVNCMessages(vnc);
 
-            itm = NULL;
-            vnc = NULL;
+                itm = NULL;
+                vnc = NULL;
+            }
         }
 
-        checkDelay ++;
-
-        if (checkDelay == 10)
-        {
-            checkDelay = 0;
-            Fl::check();
-        }
+        // the usleep before the Fl::wait seems to help
+        // with yielding control to other processes
+        usleep(10);
+        Fl::wait(0.250);
     }
 }
 
@@ -945,6 +951,7 @@ int VncViewer::handle (int event)
 
     float nMouseX = 0;
     float nMouseY = 0;
+
     static int nButtonMask;
     HostItem * itm = vnc->itm;
 
@@ -998,7 +1005,7 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton1Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
+                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }
@@ -1007,7 +1014,7 @@ int VncViewer::handle (int event)
             {
                 nButtonMask |= rfbButton3Mask;
                 SendPointerEvent(vnc->vncClient, nMouseX, nMouseY, nButtonMask);
-                SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
+                //SendIncrementalFramebufferUpdateRequest(vnc->vncClient);
                 app->scanIsRunning = false;
                 return 1;
             }

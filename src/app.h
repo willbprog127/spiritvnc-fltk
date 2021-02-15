@@ -132,7 +132,7 @@ public:
         savedY(0),
         savedW(800),
         savedH(600),
-        connectedItems(0),
+        createdObjects(0),
         msgThread(0),
         strF12ClipVar("")
     {
@@ -229,7 +229,7 @@ public:
     int savedY;
     int savedW;
     int savedH;
-    int connectedItems;
+    int createdObjects;
     pthread_t msgThread;
     std::string strF12ClipVar;
 } extern * app;
