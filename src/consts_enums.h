@@ -36,7 +36,7 @@
 #define CONSTS_H
 
 /* constants */
-#define SV_APP_VERSION "0.4.5"
+#define SV_APP_VERSION "0.4.6"
 
 #define SV_CONNECTION_TIMEOUT_SECS  15
 #define SV_ONE_SECOND               1.00
