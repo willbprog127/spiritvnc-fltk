@@ -4,7 +4,7 @@ SpiritVNC - FLTK is an FLTK-based multi-view VNC client for Unix-like systems, i
 SpiritVNC features VNC-through-SSH, reverse (listening) VNC connections and timed scanning of
 connected viewers.
 
-2016-2020 Will Brokenbourgh
+2016-2021 Will Brokenbourgh
 https://www.pismotek.com/brainout/
 
 To God be the glory! :-D :heart:
