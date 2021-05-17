@@ -38,6 +38,8 @@
 /* constants */
 #define SV_APP_VERSION "0.4.6"
 
+#define SV_CURRENT_YEAR "2021"
+
 #define SV_CONNECTION_TIMEOUT_SECS  15
 #define SV_ONE_SECOND               1.00
 #define SV_PROP_LINE_MAX            4096

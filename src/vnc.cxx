@@ -43,7 +43,11 @@ void VncObject::createVNCListener ()
     HostItem * itm = new HostItem();
 
     if (itm == NULL)
+    {
+        fl_beep(FL_BEEP_DEFAULT);
+        svMessageWindow("Error: Could not create listening VNC connection", "SpiritVNC - FLTK");
         return;
+    }
 
     itm->name = "Listening";
     itm->scaling = 'f';
@@ -74,7 +78,11 @@ void VncObject::createVNCObject (HostItem * itm)
     if (itm == NULL ||
         itm->isConnected == true ||
         itm->isConnecting == true)
+    {
+        fl_beep(FL_BEEP_DEFAULT);
+        svMessageWindow("Error: Could not create VNC connection", "SpiritVNC - FLTK");
         return;
+    }
 
     // if the host type is 'v' or 's', create vnc viewer
     if (itm->hostType == 'v' || itm->hostType == 's')
@@ -659,19 +667,32 @@ void VncObject::libVncLogging (const char * format, ...)
 
 /* master loop to handle all vnc objects' message checking */
 /* (static function) */
-void VncObject::masterMessageLoop (void * notUsed)
+void VncObject::masterMessageLoop ()
 {
     HostItem * itm = NULL;
     VncObject * vnc = NULL;
-
-    (void) notUsed;
 
     while (app->shuttingDown == false)
     {
         // only loop if there are objects alive
         if (app->createdObjects != 0)
         {
-            // iterate through the host list and check each for an active vnc object
+            // spend the most time processing the active vnc connection
+            for (unsigned int i = 0; i < 100; i++)
+            {
+                Fl::wait(0.100);
+
+                vnc = app->vncViewer->vnc;
+
+                if (vnc != NULL && vnc->itm != NULL)
+                    VncObject::checkVNCMessages(vnc);
+                else
+                    break;
+            }
+
+            // after current connection looping 100 times,
+            // iterate through the host list one time and
+            // check each to see if the connection is alive
             for (int i = 0; i <= app->hostList->size(); i ++)
             {
                 Fl::lock();
@@ -697,9 +718,6 @@ void VncObject::masterMessageLoop (void * notUsed)
             }
         }
 
-        // the usleep before the Fl::wait seems to help
-        // with yielding control to other processes
-        usleep(10);
         Fl::wait(0.250);
     }
 }

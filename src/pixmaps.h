@@ -57,5 +57,6 @@ extern const char * pmStatusNoConnect[];
 extern const char * pmStatusNoConnectCB[];
 extern const char * pmListHelp[];
 extern const char * pmBlank[];
+extern const char * pmSpiritvnc_xpm[];
 
 #endif

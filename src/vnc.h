@@ -111,7 +111,7 @@ public:
     static void createVNCObject (HostItem *);
     static void createVNCListener ();
     static void * initVNCConnection (void *);
-    static void masterMessageLoop (void *);
+    static void masterMessageLoop ();
 };
 
 /* vnc viewer widget class */

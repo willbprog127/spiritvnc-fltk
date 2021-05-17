@@ -134,7 +134,8 @@ public:
         savedH(600),
         createdObjects(0),
         msgThread(0),
-        strF12ClipVar("")
+        strF12ClipVar(""),
+        windowIcon(NULL)
     {
         // get user's login name for reading/writing config file
 
@@ -232,6 +233,7 @@ public:
     int createdObjects;
     pthread_t msgThread;
     std::string strF12ClipVar;
+    Fl_Image * windowIcon;
 } extern * app;
 
 

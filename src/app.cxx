@@ -81,7 +81,7 @@ int SVInput::handle (int e)
                 else if (strR == "Copy")
                     copy(1);
                 else if (strR == "Paste")
-                    Fl::paste(* this);
+                    Fl::paste(*this);
             }
         }
 
@@ -133,7 +133,7 @@ int SVSecretInput::handle (int e)
                 if (strR == "Undo")
                     undo();
                 else if (strR == "Paste")
-                    Fl::paste(* this);
+                    Fl::paste(*this);
             }
         }
 
@@ -234,8 +234,10 @@ void svConfigReadCreateHostList ()
                 if (strProp == "scantimeout")
                 {
                     int w = atoi(strVal.c_str());
+
                     if (w < 1)
                         w = 1;
+
                     app->nScanTimeout = w;
                 }
 
@@ -243,8 +245,10 @@ void svConfigReadCreateHostList ()
                 if (strProp == "deadtimeout")
                 {
                     int w = atoi(strVal.c_str());
+
                     if (w < 1)
                         w = 100;
+
                     app->nDeadTimeout = w;
                 }
 
@@ -252,8 +256,10 @@ void svConfigReadCreateHostList ()
                 if (strProp == "startinglocalport")
                 {
                     int w = atoi(strVal.c_str());
+
                     if (w < 1)
                         w = 15000;
+
                     app->nStartingLocalPort = w;
                 }
 
@@ -284,6 +290,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "listfontsize")
                 {
                     app->nListFontSize = atoi(strVal.c_str());
+
                     if (app->nListFontSize < 1)
                         app->nListFontSize = 10;
                 }
@@ -292,6 +299,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "savedx")
                 {
                     app->savedX = atoi(strVal.c_str());
+
                     if (app->savedX < 1)
                         app->savedX = 0;
                 }
@@ -300,6 +308,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "savedy")
                 {
                     app->savedY = atoi(strVal.c_str());
+
                     if (app->savedY < 1)
                         app->savedY = 0;
                 }
@@ -308,6 +317,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "savedw")
                 {
                     app->savedW = atoi(strVal.c_str());
+
                     if (app->savedW < 1)
                         app->savedW = 800;
                 }
@@ -316,6 +326,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "savedh")
                 {
                     app->savedH = atoi(strVal.c_str());
+
                     if (app->savedH < 1)
                         app->savedH = 600;
                 }
@@ -348,6 +359,7 @@ void svConfigReadCreateHostList ()
                 if (strProp == "group")
                 {
                     itm->group = strVal;
+
                     if (strLastGroup != itm->group)
                     {
                         //app->hostList->add("");
@@ -932,6 +944,7 @@ int svFindFreeTcpPort ()
     for (int nPort = app->nStartingLocalPort + 99; nPort > app->nStartingLocalPort; nPort --)
     {
         structSockAddress.sin_port = htons((unsigned short)nPort);
+
         if (bind(nSock, reinterpret_cast<sockaddr *>(&structSockAddress),
             sizeof(structSockAddress)) == 0)
         {
@@ -1292,6 +1305,7 @@ void svHandleHostListButtons (Fl_Widget * button, void * data)
         for (int i = 0; i <= app->hostList->size(); i ++)
         {
             itm = static_cast<HostItem *>(app->hostList->data(i));
+
             if (itm != NULL)
             {
                 vnc = itm->vnc;
@@ -1407,6 +1421,7 @@ void svHandleHostListEvents (Fl_Widget * list, void * data2)
             // include any error message in menu
             int nFlags = FL_MENU_INVISIBLE;
             char strError[FL_PATH_MAX] = {0};
+
             strncat(strError, itm->lastErrorMessage.c_str(), FL_PATH_MAX - 1);
 
             // enable / disable error message in menu
@@ -2504,7 +2519,7 @@ void svShowAboutHelp ()
 
     const char strHelp[] = "<center><strong><h3>SpiritVNC"
         " - FLTK</strong></center></font>"
-        "<p><center><font face='sans'>&copy; 2016-2020 Will Brokenbourgh - <a"
+        "<p><center><font face='sans'>&copy; 2016-" SV_CURRENT_YEAR " Will Brokenbourgh - <a"
         " href='https://www.pismotek.com/brainout/'>"
         "https://www.pismotek.com/brainout/</a></font></center></p>"
         "<p><center><font face='sans'>Version " SV_APP_VERSION "<br>"
