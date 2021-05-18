@@ -680,6 +680,7 @@ void VncObject::masterMessageLoop ()
             // spend the most time processing the active vnc connection
             for (unsigned int i = 0; i < 100; i++)
             {
+                // keep from making too tight a loop
                 Fl::wait(0.100);
 
                 vnc = app->vncViewer->vnc;

@@ -40,7 +40,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined __linux__ || defined __FreeBSD__
+#ifndef __APPLE__
 #include <X11/xpm.h>
 #endif
 #include <FL/Fl.H>
@@ -60,8 +60,6 @@ int main (int argc, char **argv)
     Fl::lock();
 
     // set graphics / display options
-    //Fl::visual(FL_RGB);
-    //Fl::visual(FL_DOUBLE | FL_INDEX);
     Fl::visual(FL_DOUBLE | FL_RGB);
 
     // create program UI
@@ -87,12 +85,14 @@ int main (int argc, char **argv)
     svPositionWidgets();
 
     // set window's icon on Linux and FreeBSD
-    #if defined __linux__ || defined __FreeBSD__
-    fl_open_display();                // needed if display has not been previously opened
+    #ifndef __APPLE__
+    // needed if display has not been previously opened
+    fl_open_display();
 
     Pixmap pm;
     Pixmap mask;
-    XpmCreatePixmapFromData(fl_display, DefaultRootWindow(fl_display), (char **)pmSpiritvnc_xpm, &pm, &mask, NULL);
+    XpmCreatePixmapFromData(fl_display, DefaultRootWindow(fl_display),
+        (char **)pmSpiritvnc_xpm, &pm, &mask, NULL);
 
     app->mainWin->icon(reinterpret_cast<void *>(pm));
     #endif
@@ -102,10 +102,12 @@ int main (int argc, char **argv)
 
     // read in the current window hints, then modify them to allow icon transparency
     // Thanks Ian MacArthur!
-    #if defined __linux__ || defined __FreeBSD__
+    #ifndef __APPLE__
     XWMHints * hints = XGetWMHints(fl_display, fl_xid(app->mainWin));
-    hints->flags |= IconMaskHint; // ensure transparency mask is enabled for the XPM icon
-    hints->icon_mask = mask; // set the transparency mask
+    // ensure transparency mask is enabled for the XPM icon
+    hints->flags |= IconMaskHint;
+    // set the transparency mask
+    hints->icon_mask = mask;
     XSetWMHints(fl_display, fl_xid(app->mainWin), hints);
     XFree(hints);
     #endif
@@ -139,7 +141,7 @@ int main (int argc, char **argv)
     // restore main window saved postition and size
     #ifndef __APPLE__
     // x11 window managers usually need delayed repositioning
-    Fl::add_timeout(0.5, svRestoreWindowSizePosition);
+    Fl::add_timeout(0.7, svRestoreWindowSizePosition);
     #endif
 
     VncObject::masterMessageLoop();
