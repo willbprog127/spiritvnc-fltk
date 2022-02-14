@@ -1,8 +1,9 @@
-__NOTE__:
-This project is currently deprecated in favor of [SpiritVNC-FLTK-No-libssh2](https://github.com/willbprog127/spiritvnc-fltk-no-libssh2) due to current issues with libssh2 and unfavorable changes to OpenSSH.  Thanks!
+⚠️ __NOTE:__
+⚠️ __This project is currently deprecated and unmaintained in favor of [SpiritVNC-FLTK-No-libssh2](https://github.com/willbprog127/spiritvnc-fltk-no-libssh2) due to issues with libssh2.  Thanks! :warning:__
+
+---
 
 __SpiritVNC - FLTK__
-
 SpiritVNC - FLTK is an FLTK-based multi-view VNC client for Unix-like systems, including Linux, macOS and FreeBSD.
 SpiritVNC features VNC-through-SSH, reverse (listening) VNC connections and timed scanning of
 connected viewers.
